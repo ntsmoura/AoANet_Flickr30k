@@ -1,7 +1,7 @@
 id="aoanet"
-input_json = "../drive/MyDrive/AoANet_Flickr30k/flickr30k/data/f30ktalk.json"
-input_label_h5 = "../drive/MyDrive/AoANet_Flickr30k/flickr30k/data/f30ktalk_label.h5"
-input_att_dir = "data/f30kbu_att.pth"
+input_json="../drive/MyDrive/AoANet_Flickr30k/flickr30k/data/f30ktalk.json"
+input_label_h5="../drive/MyDrive/AoANet_Flickr30k/flickr30k/data/f30ktalk_label.h5"
+input_att_dir="./data/f30kbu_att.pth"
 if [ ! -f log/log_$id/infos_$id.pkl ]; then
 start_from=""
 else
