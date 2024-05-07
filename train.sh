@@ -22,7 +22,9 @@ python train.py --id $id \
     --label_smoothing 0.2 \
     --input_json $input_json \
     --input_label_h5 $input_label_h5 \
-    --input_att_dir $input_att_dir \
+    --input_fc_dir  $input_att_dir \
+    --input_att_dir  $input_att_dir \
+    --input_box_dir  $input_att_dir \
     --seq_per_img 5 \
     --batch_size 10 \
     --beam_size 1 \
