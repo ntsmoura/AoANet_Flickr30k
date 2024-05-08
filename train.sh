@@ -1,7 +1,7 @@
 id="aoanet"
 input_json="../drive/MyDrive/AoANet_Flickr30k/flickr30k/data/f30ktalk.json"
 input_label_h5="../drive/MyDrive/AoANet_Flickr30k/flickr30k/data/f30ktalk_label.h5"
-input_att_dir="./data/f30kbu_att.pth"
+input_att_dir="../drive/MyDrive/AoANet_Flickr30k/f30kbu_att.pth"
 if [ ! -f log/log_$id/infos_$id.pkl ]; then
 start_from=""
 else
@@ -26,7 +26,7 @@ python train.py --id $id \
     --input_att_dir  $input_att_dir \
     --input_box_dir  $input_att_dir \
     --seq_per_img 5 \
-    --batch_size 10 \
+    --batch_size 200 \
     --beam_size 1 \
     --learning_rate 2e-4 \
     --num_layers 2 \
@@ -36,10 +36,10 @@ python train.py --id $id \
     --scheduled_sampling_start 0 \
     --checkpoint_path log/log_$id  \
     $start_from \
-    --save_checkpoint_every 6000 \
+    --save_checkpoint_every 291 \
     --language_eval 1 \
     --val_images_use -1 \
-    --max_epochs 25 \
+    --max_epochs 10 \
     --scheduled_sampling_increase_every 5 \
     --scheduled_sampling_max_prob 0.5 \
     --learning_rate_decay_every 3
