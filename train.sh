@@ -26,7 +26,7 @@ python train.py --id $id \
     --input_att_dir  $input_att_dir \
     --input_box_dir  $input_att_dir \
     --seq_per_img 5 \
-    --batch_size 200 \
+    --batch_size 100 \
     --beam_size 1 \
     --learning_rate 2e-4 \
     --num_layers 2 \
@@ -36,7 +36,7 @@ python train.py --id $id \
     --scheduled_sampling_start 0 \
     --checkpoint_path log/log_$id  \
     $start_from \
-    --save_checkpoint_every 291 \
+    --save_checkpoint_every 600 \
     --language_eval 1 \
     --val_images_use -1 \
     --max_epochs 10 \
