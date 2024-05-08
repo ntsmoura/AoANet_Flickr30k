@@ -15,6 +15,8 @@ import torch.utils.data as data
 import multiprocessing
 import six
 
+CACHED_FLICKR30K_ATT = None
+
 class HybridLoader:
     """
     If db_path is a director, then use normal file loading
@@ -22,6 +24,8 @@ class HybridLoader:
     The loading method depend on extention.
     """
     def __init__(self, db_path, ext):
+        global CACHED_FLICKR30K_ATT
+
         self.db_path = db_path
         self.ext = ext
         if self.ext == '.npy':
@@ -35,7 +39,9 @@ class HybridLoader:
                                 readahead=False, meminit=False)
         elif db_path.endswith('.pth'): # Assume a key,value dictionary
             self.db_type = 'pth'
-            self.feat_file = torch.load(db_path)
+            if not CACHED_FLICKR30K_ATT:
+                CACHED_FLICKR30K_ATT = torch.load(db_path)
+            self.feat_file = CACHED_FLICKR30K_ATT
             self.loader = lambda x: x
             print('HybridLoader: ext is ignored')
         else:
