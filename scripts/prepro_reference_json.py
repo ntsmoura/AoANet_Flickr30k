@@ -37,8 +37,7 @@ from random import shuffle, seed
 
 
 def main(params):
-
-    imgs = json.load(open(params['input_json'][0], 'r'))['images']
+    imgs = json.load(open(params["input_json"][0], "r"))["images"]
     # tmp = []
     # for k in imgs.keys():
     #     for img in imgs[k]:
@@ -49,41 +48,71 @@ def main(params):
     # imgs = tmp
 
     # create output json file
-    out = {u'info': {u'description': u'This is stable 1.0 version of the 2014 MS COCO dataset.', u'url': u'http://mscoco.org', u'version': u'1.0', u'year': 2014, u'contributor': u'Microsoft COCO group', u'date_created': u'2015-01-27 09:11:52.357475'}, u'licenses': [{u'url': u'http://creativecommons.org/licenses/by-nc-sa/2.0/', u'id': 1, u'name': u'Attribution-NonCommercial-ShareAlike License'}, {u'url': u'http://creativecommons.org/licenses/by-nc/2.0/', u'id': 2, u'name': u'Attribution-NonCommercial License'}, {u'url': u'http://creativecommons.org/licenses/by-nc-nd/2.0/', u'id': 3, u'name': u'Attribution-NonCommercial-NoDerivs License'}, {u'url': u'http://creativecommons.org/licenses/by/2.0/', u'id': 4, u'name': u'Attribution License'}, {u'url': u'http://creativecommons.org/licenses/by-sa/2.0/', u'id': 5, u'name': u'Attribution-ShareAlike License'}, {u'url': u'http://creativecommons.org/licenses/by-nd/2.0/', u'id': 6, u'name': u'Attribution-NoDerivs License'}, {u'url': u'http://flickr.com/commons/usage/', u'id': 7, u'name': u'No known copyright restrictions'}, {u'url': u'http://www.usa.gov/copyright.shtml', u'id': 8, u'name': u'United States Government Work'}], u'type': u'captions'}
-    out.update({'images': [], 'annotations': []})
+    out = {
+        "info": {
+            "description": "This is stable 1.0 version of the 2014 MS COCO dataset.",
+            "url": "http://mscoco.org",
+            "version": "1.0",
+            "year": 2014,
+            "contributor": "Microsoft COCO group",
+            "date_created": "2015-01-27 09:11:52.357475",
+        },
+        "licenses": [
+            {
+                "url": "http://creativecommons.org/licenses/by-nc-sa/2.0/",
+                "id": 1,
+                "name": "Attribution-NonCommercial-ShareAlike License",
+            },
+            {
+                "url": "http://creativecommons.org/licenses/by-nc/2.0/",
+                "id": 2,
+                "name": "Attribution-NonCommercial License",
+            },
+            {
+                "url": "http://creativecommons.org/licenses/by-nc-nd/2.0/",
+                "id": 3,
+                "name": "Attribution-NonCommercial-NoDerivs License",
+            },
+            {"url": "http://creativecommons.org/licenses/by/2.0/", "id": 4, "name": "Attribution License"},
+            {
+                "url": "http://creativecommons.org/licenses/by-sa/2.0/",
+                "id": 5,
+                "name": "Attribution-ShareAlike License",
+            },
+            {"url": "http://creativecommons.org/licenses/by-nd/2.0/", "id": 6, "name": "Attribution-NoDerivs License"},
+            {"url": "http://flickr.com/commons/usage/", "id": 7, "name": "No known copyright restrictions"},
+            {"url": "http://www.usa.gov/copyright.shtml", "id": 8, "name": "United States Government Work"},
+        ],
+        "type": "captions",
+    }
+    out.update({"images": [], "annotations": []})
 
     cnt = 0
     empty_cnt = 0
     for i, img in enumerate(imgs):
-        if img['split'] == 'train':
+        if img["split"] == "train":
             continue
-        out['images'].append(
-            {u'id': img.get('cocoid', img['imgid'])})
-        for j, s in enumerate(img['sentences']):
+        out["images"].append({"id": img.get("cocoid", img["imgid"])})
+        for j, s in enumerate(img["sentences"]):
             if len(s) == 0:
                 continue
-            s = ' '.join(s['tokens'])
-            out['annotations'].append(
-                {'image_id': out['images'][-1]['id'], 'caption': s, 'id': cnt})
+            s = " ".join(s["tokens"])
+            out["annotations"].append({"image_id": out["images"][-1]["id"], "caption": s, "id": cnt})
             cnt += 1
 
-    json.dump(out, open(params['output_json'], 'w'))
-    print('wrote ', params['output_json'])
+    json.dump(out, open(params["output_json"], "w"))
+    print("wrote ", params["output_json"])
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
 
     # input json
-    parser.add_argument('--input_json', nargs='+', required=True,
-                        help='input json file to process into hdf5')
-    parser.add_argument('--output_json', default='data.json',
-                        help='output json file')
+    parser.add_argument("--input_json", nargs="+", required=True, help="input json file to process into hdf5")
+    parser.add_argument("--output_json", default="data.json", help="output json file")
 
     args = parser.parse_args()
     params = vars(args)  # convert to ordinary dict
-    print('parsed input parameters:')
+    print("parsed input parameters:")
     print(json.dumps(params, indent=2))
     main(params)
-

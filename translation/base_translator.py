@@ -1,11 +1,20 @@
 import json
 import pickle
 from asyncio import Lock
+from copy import copy
 from pathlib import Path
 
 
 class BaseTranslator:
-    def __init__(self, translator_identifier: str, checkpoint_path: Path, output_path: Path, source_json: Path = Path(__file__).parent.parent / "data" / "flickr30k_dataset.json", source_language: str = 'en', dest_language: str = 'pt'):
+    def __init__(
+        self,
+        translator_identifier: str,
+        checkpoint_path: Path,
+        output_path: Path,
+        source_json: Path = Path(__file__).parent.parent / "data" / "flickr30k_dataset.json",
+        source_language: str = "en",
+        dest_language: str = "pt",
+    ):
         """
         Translator base class
 
@@ -25,8 +34,13 @@ class BaseTranslator:
         self._flickr_source_json = None
         self._flickr_dest_json = None
         self._checkpoint_dictionary = dict()
-        self.checkpoint_lock = Lock()
         self.output_lock = Lock()
+        self.max_sentence_batches = 25
+
+        self.load_checkpoint()
+        self.read_source_json()
+        # TODO create method below
+        self.create_base_ouput()
 
     def read_source_json(self):
         """
@@ -35,16 +49,55 @@ class BaseTranslator:
         with open(self.source_json) as file:
             self._flickr_source_json = json.load(file)
 
-    def save_checkpoint(self):
+    def save_checkpoint(self, checkpoint_data: dict):
         """
         Saves dataset translation checkpoint.
+
+        :param checkpoint_data: Data to be saved in checkpoint dictionary.
         """
-        async with self.checkpoint_lock:
-            with open(self.checkpoint_path / f"{self.translator_identifier}_flicker30k_checkpoint.json", "w+") as file:
-                source_dict = json.load(file)
-                source_dict.upload(self._checkpoint_dictionary)
-                json.dump(source_dict, file)
+        with open(self.checkpoint_path / f"{self.translator_identifier}_flicker30k_checkpoint.json", "w+") as file:
+            self._checkpoint_dictionary.update(checkpoint_data)
+            json.dump(self._checkpoint_dictionary, file)
+
     def load_checkpoint(self):
         """
         Loads dataset translation checkpoint.
         """
+        try:
+            with open(
+                self.checkpoint_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k_checkpoint.json",
+                "r",
+            ) as file:
+                self._checkpoint_dictionary = json.load(file)
+        except IOError:
+            pass
+
+    async def translate_sentences(self):
+        """
+        Split dataset images sentences in batches and translate them using the specified method.
+        """
+        raise NotImplementedError
+
+    async def append_translated_sentences_to_output(self, translation_dict: dict, checkpoint_data: dict):
+        """
+        Appends translated sentences information to output json.
+        Saves checkpoint data.
+        """
+        old_flickr_dest_json = copy(self._flickr_dest_json)
+        old_checkpoint = copy(self._checkpoint_dictionary)
+        try:
+            async with self.output_lock:
+                with open(
+                    self.output_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json", "r+"
+                ) as file:
+                    self._flickr_dest_json["images"].append(translation_dict)
+                    json.dump(self._flickr_dest_json, file)
+                    self.save_checkpoint(checkpoint_data)
+
+        except Exception:
+            with open(
+                self.output_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json", "r+"
+            ) as file:
+                json.dump(old_flickr_dest_json, file)
+            with open(self.checkpoint_path / f"{self.translator_identifier}_flicker30k_checkpoint.json", "w+") as file:
+                json.dump(old_checkpoint, file)

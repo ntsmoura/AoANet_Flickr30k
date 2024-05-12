@@ -26,6 +26,7 @@ import misc.utils as utils
 from .CaptionModel import CaptionModel
 from .AttModel import pack_wrapper, AttModel
 
+
 class AttEnsemble(AttModel):
     def __init__(self, models, weights=None):
         CaptionModel.__init__(self)
@@ -37,7 +38,7 @@ class AttEnsemble(AttModel):
         self.bad_endings_ix = models[0].bad_endings_ix
         self.ss_prob = 0
         weights = weights or [1.0] * len(self.models)
-        self.register_buffer('weights', torch.tensor(weights))
+        self.register_buffer("weights", torch.tensor(weights))
 
     def init_hidden(self, batch_size):
         state = [m.init_hidden(batch_size) for m in self.models]
@@ -66,7 +67,13 @@ class AttEnsemble(AttModel):
 
         state = self.unpack_state(state)
         output, state = self.core(xt, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, state, tmp_att_masks)
-        logprobs = torch.stack([F.softmax(m.logit(output[i]), dim=1) for i,m in enumerate(self.models)], 2).mul(self.weights).div(self.weights.sum()).sum(-1).log()
+        logprobs = (
+            torch.stack([F.softmax(m.logit(output[i]), dim=1) for i, m in enumerate(self.models)], 2)
+            .mul(self.weights)
+            .div(self.weights.sum())
+            .sum(-1)
+            .log()
+        )
 
         return logprobs, self.pack_state(state)
 
@@ -87,12 +94,15 @@ class AttEnsemble(AttModel):
     #     return fc_feats, att_feats, p_att_feats, [att_masks] * len(self.models)
 
     def _sample_beam(self, fc_feats, att_feats, att_masks=None, opt={}):
-        beam_size = opt.get('beam_size', 10)
+        beam_size = opt.get("beam_size", 10)
         batch_size = fc_feats.size(0)
 
         fc_feats, att_feats, p_att_feats, att_masks = self._prepare_feature(fc_feats, att_feats, att_masks)
 
-        assert beam_size <= self.vocab_size + 1, 'lets assume this for now, otherwise this corner case causes a few headaches down the road. can be dealt with in future if needed'
+        assert beam_size <= self.vocab_size + 1, (
+            "lets assume this for now, otherwise this corner case causes a few headaches down the road. can be dealt"
+            " with in future if needed"
+        )
         seq = torch.LongTensor(self.seq_length, batch_size).zero_()
         seqLogprobs = torch.FloatTensor(self.seq_length, batch_size)
         # lets process every image independently for now, for simplicity
@@ -100,17 +110,36 @@ class AttEnsemble(AttModel):
         self.done_beams = [[] for _ in range(batch_size)]
         for k in range(batch_size):
             state = self.init_hidden(beam_size)
-            tmp_fc_feats = [fc_feats[i][k:k+1].expand(beam_size, fc_feats[i].size(1)) for i,m in enumerate(self.models)]
-            tmp_att_feats = [att_feats[i][k:k+1].expand(*((beam_size,)+att_feats[i].size()[1:])).contiguous() for i,m in enumerate(self.models)]
-            tmp_p_att_feats = [p_att_feats[i][k:k+1].expand(*((beam_size,)+p_att_feats[i].size()[1:])).contiguous() for i,m in enumerate(self.models)]
-            tmp_att_masks = [att_masks[i][k:k+1].expand(*((beam_size,)+att_masks[i].size()[1:])).contiguous() if att_masks[i] is not None else att_masks[i] for i,m in enumerate(self.models)]
+            tmp_fc_feats = [
+                fc_feats[i][k : k + 1].expand(beam_size, fc_feats[i].size(1)) for i, m in enumerate(self.models)
+            ]
+            tmp_att_feats = [
+                att_feats[i][k : k + 1].expand(*((beam_size,) + att_feats[i].size()[1:])).contiguous()
+                for i, m in enumerate(self.models)
+            ]
+            tmp_p_att_feats = [
+                p_att_feats[i][k : k + 1].expand(*((beam_size,) + p_att_feats[i].size()[1:])).contiguous()
+                for i, m in enumerate(self.models)
+            ]
+            tmp_att_masks = [
+                (
+                    att_masks[i][k : k + 1].expand(*((beam_size,) + att_masks[i].size()[1:])).contiguous()
+                    if att_masks[i] is not None
+                    else att_masks[i]
+                )
+                for i, m in enumerate(self.models)
+            ]
 
             it = fc_feats[0].data.new(beam_size).long().zero_()
-            logprobs, state = self.get_logprobs_state(it, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, tmp_att_masks, state)
+            logprobs, state = self.get_logprobs_state(
+                it, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, tmp_att_masks, state
+            )
 
-            self.done_beams[k] = self.beam_search(state, logprobs, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, tmp_att_masks, opt=opt)
-            seq[:, k] = self.done_beams[k][0]['seq'] # the first beam has highest cumulative score
-            seqLogprobs[:, k] = self.done_beams[k][0]['logps']
+            self.done_beams[k] = self.beam_search(
+                state, logprobs, tmp_fc_feats, tmp_att_feats, tmp_p_att_feats, tmp_att_masks, opt=opt
+            )
+            seq[:, k] = self.done_beams[k][0]["seq"]  # the first beam has highest cumulative score
+            seqLogprobs[:, k] = self.done_beams[k][0]["logps"]
         # return the samples and their log likelihoods
         return seq.transpose(0, 1), seqLogprobs.transpose(0, 1)
         # return the samples and their log likelihoods
