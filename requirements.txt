@@ -3,3 +3,4 @@ tqdm
 lmdb
 tensorboardX
 six
+libretranslate
