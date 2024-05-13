@@ -1,5 +1,5 @@
 import json
-import pickle
+import os.path
 from asyncio import Lock
 from copy import copy
 from pathlib import Path
@@ -39,8 +39,7 @@ class BaseTranslator:
 
         self.load_checkpoint()
         self.read_source_json()
-        # TODO create method below
-        self.create_base_ouput()
+        self.create_or_load_ouput_json()
 
     def read_source_json(self):
         """
@@ -74,7 +73,7 @@ class BaseTranslator:
 
     async def translate_sentences(self):
         """
-        Split dataset images sentences in batches and translate them using the specified method.
+        Split dataset images sentences into batches and translate them using the specified method.
         """
         raise NotImplementedError
 
@@ -101,3 +100,18 @@ class BaseTranslator:
                 json.dump(old_flickr_dest_json, file)
             with open(self.checkpoint_path / f"{self.translator_identifier}_flicker30k_checkpoint.json", "w+") as file:
                 json.dump(old_checkpoint, file)
+
+    def create_or_load_ouput_json(self):
+        """Creates base output json or loads an existing one"""
+        base_json = {"images": list, "dataset": "flickr30k"}
+        if not os.path.exists(self.output_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json"):
+            with open(
+                self.output_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json", "w+"
+            ) as file:
+                json.dump(base_json, file)
+                self._flickr_dest_json = base_json
+        else:
+            with open(
+                self.output_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json", "r"
+            ) as file:
+                self._flickr_dest_json = json.load(file)
