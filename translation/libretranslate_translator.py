@@ -5,6 +5,7 @@ It keeps track of already done translations and avoid to repeat them
 """
 
 import asyncio
+import os
 from pathlib import Path
 
 from translation.base_translator import BaseTranslator
@@ -85,3 +86,18 @@ class LibreTranslate(BaseTranslator):
             translated_sentence = response.json()["translatedText"]
 
         return image_id, translated_sentence.split("\n")
+
+async def main():
+    checkpoint_path = Path(__file__).parent / "translation_checkpoint"
+    data_path = Path(__file__).parent / "translation_data"
+
+    os.makedirs(checkpoint_path,exist_ok=True)
+    os.makedirs(data_path, exist_ok=True)
+
+    libre_translator = LibreTranslate(checkpoint_path=checkpoint_path, output_path=data_path)
+
+    await libre_translator.translate_sentences()
+
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
