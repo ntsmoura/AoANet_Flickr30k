@@ -4,9 +4,12 @@ It runs over the JSON translating raw sentences and splitting translated tokens
 It keeps track of already done translations and avoid to repeat them
 """
 
+import asyncio
 from pathlib import Path
 
 from translation.base_translator import BaseTranslator
+
+import httpx
 
 
 class LibreTranslate(BaseTranslator):
@@ -35,3 +38,50 @@ class LibreTranslate(BaseTranslator):
             source_language=source_language,
             dest_language=dest_language,
         )
+
+    async def translate_sentences(self):
+        coros = []
+        images = self._flickr_source_json["images"]
+        infos_dict = {}
+
+        for image in images:
+            image_id = image["imgid"]
+            infos_dict[image_id] = image
+            if image_id not in self._checkpoint_dictionary:
+                coros.append(
+                    self.send_sentences_to_api(
+                        image_id, "\n".join([sentence["raw"] for sentence in image["sentences"]])
+                    )
+                )
+
+            if len(coros) >= self.max_sentence_batches or image_id == images[-1]["imgid"]:
+                results = await asyncio.gather(*coros)
+                parse_coros = []
+                for result in results:
+                    image_id, translated_sentences = result
+                    translation_dict = infos_dict[image_id]
+                    for sentid, sentence in enumerate(translation_dict["sentences"]):
+                        sentence["raw"] = translated_sentences[sentid]
+                        sentence["tokens"] = translated_sentences[sentid].lower().split()
+                    checkpoint_data = {image_id: "ok"}
+                    parse_coros.append(self.append_translated_sentences_to_output(translation_dict, checkpoint_data))
+
+                await asyncio.gather(*parse_coros)
+
+    async def send_sentences_to_api(self, image_id: int, sentences: [str]) -> (int, [str]):
+        """
+        Send sentences to libretranslate api and returns image id and translated sentences
+        """
+        input_sentence = "\n".join(sentences)
+        json_data = {
+            "q": input_sentence,
+            "source": self.source_language,
+            "target": self.dest_language,
+            "format": "text",
+            "api_key": "",
+        }
+        async with httpx.AsyncClient() as client:
+            response = await client.post("http://127.0.0.1:5000/translate", json=json_data)
+            translated_sentence = response.json()["translatedText"]
+
+        return image_id, translated_sentence.split("\n")
