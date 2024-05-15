@@ -46,7 +46,7 @@ class BaseTranslator:
         Reads the source dataset json.
         """
         with open(self.source_json) as file:
-            self._flickr_source_json = json.load(file)
+            self._flickr_source_json = json.loads(file.read())
 
     def save_checkpoint(self, checkpoint_data: dict):
         """
@@ -56,7 +56,8 @@ class BaseTranslator:
         """
         with open(self.checkpoint_path / f"{self.translator_identifier}_flicker30k_checkpoint.json", "w+") as file:
             self._checkpoint_dictionary.update(checkpoint_data)
-            json.dump(self._checkpoint_dictionary, file)
+            dumped_json = json.dumps(self._checkpoint_dictionary)
+            file.write(dumped_json)
 
     def load_checkpoint(self):
         """
@@ -67,7 +68,7 @@ class BaseTranslator:
                 self.checkpoint_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k_checkpoint.json",
                 "r",
             ) as file:
-                self._checkpoint_dictionary = json.load(file)
+                self._checkpoint_dictionary = json.loads(file.read())
         except IOError:
             pass
 
@@ -86,32 +87,38 @@ class BaseTranslator:
         old_checkpoint = copy(self._checkpoint_dictionary)
         try:
             async with self.output_lock:
+
                 with open(
                     self.output_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json", "r+"
                 ) as file:
                     self._flickr_dest_json["images"].append(translation_dict)
-                    json.dump(self._flickr_dest_json, file)
-                    self.save_checkpoint(checkpoint_data)
+                    dumped_json = json.dumps(self._flickr_dest_json)
+                    file.write(dumped_json)
 
+                self.save_checkpoint(checkpoint_data)
         except Exception:
             with open(
                 self.output_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json", "r+"
             ) as file:
-                json.dump(old_flickr_dest_json, file)
+                dumped_json = json.dumps(old_flickr_dest_json)
+                file.write(dumped_json)
             with open(self.checkpoint_path / f"{self.translator_identifier}_flicker30k_checkpoint.json", "w+") as file:
-                json.dump(old_checkpoint, file)
+                dumped_json = json.dumps(old_checkpoint)
+                file.write(dumped_json)
 
     def create_or_load_ouput_json(self):
         """Creates base output json or loads an existing one"""
-        base_json = {"images": list, "dataset": "flickr30k"}
+        base_json = {"images": [], "dataset": "flickr30k"}
         if not os.path.exists(self.output_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json"):
             with open(
                 self.output_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json", "w+"
             ) as file:
-                json.dump(base_json, file)
-                self._flickr_dest_json = base_json
+                json_string = json.dumps(base_json)
+                file.write(json_string)
+
+            self._flickr_dest_json = base_json
         else:
             with open(
                 self.output_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json", "r"
             ) as file:
-                self._flickr_dest_json = json.load(file)
+                self._flickr_dest_json = json.loads(file.read())

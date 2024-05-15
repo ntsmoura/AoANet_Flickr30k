@@ -11,6 +11,7 @@ from pathlib import Path
 from translation.base_translator import BaseTranslator
 
 import httpx
+from tqdm import tqdm
 
 
 class LibreTranslate(BaseTranslator):
@@ -45,15 +46,14 @@ class LibreTranslate(BaseTranslator):
         images = self._flickr_source_json["images"]
         infos_dict = {}
 
-        for image in images:
+        for image in tqdm(images):
             image_id = image["imgid"]
             infos_dict[image_id] = image
             if image_id not in self._checkpoint_dictionary:
                 coros.append(
                     self.send_sentences_to_api(
-                        image_id, "\n".join([sentence["raw"] for sentence in image["sentences"]])
+                        image_id, [sentence["raw"] for sentence in image["sentences"]])
                     )
-                )
 
             if len(coros) >= self.max_sentence_batches or image_id == images[-1]["imgid"]:
                 results = await asyncio.gather(*coros)
