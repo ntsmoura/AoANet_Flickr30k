@@ -54,7 +54,7 @@ class BaseTranslator:
 
         :param checkpoint_data: Data to be saved in checkpoint dictionary.
         """
-        with open(self.checkpoint_path / f"{self.translator_identifier}_flicker30k_checkpoint.json", "w+") as file:
+        with open(self.checkpoint_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k_checkpoint.json", "w+") as file:
             self._checkpoint_dictionary.update(checkpoint_data)
             dumped_json = json.dumps(self._checkpoint_dictionary)
             file.write(dumped_json)

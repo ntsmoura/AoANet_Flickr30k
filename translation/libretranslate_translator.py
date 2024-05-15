@@ -49,7 +49,7 @@ class LibreTranslate(BaseTranslator):
         for image in tqdm(images):
             image_id = image["imgid"]
             infos_dict[image_id] = image
-            if image_id not in self._checkpoint_dictionary:
+            if str(image_id) not in self._checkpoint_dictionary:
                 coros.append(
                     self.send_sentences_to_api(
                         image_id, [sentence["raw"] for sentence in image["sentences"]])
@@ -63,11 +63,12 @@ class LibreTranslate(BaseTranslator):
                     translation_dict = infos_dict[image_id]
                     for sentid, sentence in enumerate(translation_dict["sentences"]):
                         sentence["raw"] = translated_sentences[sentid]
-                        sentence["tokens"] = translated_sentences[sentid].lower().split()
+                        sentence["tokens"] = translated_sentences[sentid].strip(". ").lower().split()
                     checkpoint_data = {image_id: "ok"}
                     parse_coros.append(self.append_translated_sentences_to_output(translation_dict, checkpoint_data))
 
                 await asyncio.gather(*parse_coros)
+                coros = []
 
     async def send_sentences_to_api(self, image_id: int, sentences: [str]) -> (int, [str]):
         """
@@ -81,7 +82,7 @@ class LibreTranslate(BaseTranslator):
             "format": "text",
             "api_key": "",
         }
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=300) as client:
             response = await client.post("http://127.0.0.1:5000/translate", json=json_data)
             translated_sentence = response.json()["translatedText"]
 
