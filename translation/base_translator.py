@@ -102,7 +102,7 @@ class BaseTranslator:
             ) as file:
                 dumped_json = json.dumps(old_flickr_dest_json)
                 file.write(dumped_json)
-            with open(self.checkpoint_path / f"{self.translator_identifier}_flicker30k_checkpoint.json", "w+") as file:
+            with open(self.checkpoint_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k_checkpoint.json", "w+") as file:
                 dumped_json = json.dumps(old_checkpoint)
                 file.write(dumped_json)
 
