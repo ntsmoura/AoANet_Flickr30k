@@ -42,7 +42,8 @@ class LibreTranslate(BaseTranslator):
         )
 
     async def translate_sentences(self):
-        coros = []
+        translating_img_ids = []
+        translating_sentences = []
         images = self._flickr_source_json["images"]
         infos_dict = {}
 
@@ -50,16 +51,15 @@ class LibreTranslate(BaseTranslator):
             image_id = image["imgid"]
             infos_dict[image_id] = image
             if str(image_id) not in self._checkpoint_dictionary:
-                coros.append(
-                    self.send_sentences_to_api(
-                        image_id, [sentence["raw"] for sentence in image["sentences"]])
-                    )
+                translating_img_ids.append(image_id)
+                translating_sentences.append("\n".join([sentence["raw"] for sentence in image["sentences"]]))
 
-            if len(coros) >= self.max_sentence_batches or image_id == images[-1]["imgid"]:
-                results = await asyncio.gather(*coros)
+            if len(translating_img_ids) >= self.max_sentence_batches or image_id == images[-1]["imgid"]:
+                results = await self.send_sentences_to_api(translating_sentences)
                 parse_coros = []
-                for result in results:
-                    image_id, translated_sentences = result
+                for index, result in enumerate(results):
+                    image_id = translating_img_ids[index]
+                    translated_sentences = result.split("\n")
                     translation_dict = infos_dict[image_id]
                     for sentid, sentence in enumerate(translation_dict["sentences"]):
                         sentence["raw"] = translated_sentences[sentid]
@@ -68,15 +68,15 @@ class LibreTranslate(BaseTranslator):
                     parse_coros.append(self.append_translated_sentences_to_output(translation_dict, checkpoint_data))
 
                 await asyncio.gather(*parse_coros)
-                coros = []
+                translating_img_ids = []
+                translating_sentences = []
 
-    async def send_sentences_to_api(self, image_id: int, sentences: [str]) -> (int, [str]):
+    async def send_sentences_to_api(self, sentences: [str]) -> (int, [str]):
         """
-        Send sentences to libretranslate api and returns image id and translated sentences
+        Send sentences to libretranslate api and returns translated sentences
         """
-        input_sentence = "\n".join(sentences)
         json_data = {
-            "q": input_sentence,
+            "q": sentences,
             "source": self.source_language,
             "target": self.dest_language,
             "format": "text",
@@ -84,9 +84,9 @@ class LibreTranslate(BaseTranslator):
         }
         async with httpx.AsyncClient(timeout=300) as client:
             response = await client.post("http://127.0.0.1:5000/translate", json=json_data)
-            translated_sentence = response.json()["translatedText"]
+            translated_sentences = response.json()["translatedText"]
 
-        return image_id, translated_sentence.split("\n")
+        return translated_sentences
 
 async def main():
     checkpoint_path = Path(__file__).parent / "translation_checkpoint"
