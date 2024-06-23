@@ -111,9 +111,9 @@ class GoogleCloudTranslate(BaseTranslator):
                 }
             )
 
-            translated_sentences_matrix.append([
-                translation.translated_text for translation in response.translations
-            ])
+            translated_sentences_matrix.append(
+                [translation.translated_text for translation in response.translations]
+            )
 
         return translated_sentences_matrix
 
