@@ -2,15 +2,17 @@
 This code is responsible for translate flickr_30k dataset json to portuguese
 It runs over the JSON translating raw sentences and splitting translated tokens
 It keeps track of already done translations and avoid to repeat them
+
+To run this translator you need a google cloud account and to set the cloud credentials on google cloud cli.
 """
 
 import asyncio
 import os
 from pathlib import Path
 
-from translation.base_translator import BaseTranslator
+from google.cloud import translate
 
-import httpx
+from translation.base_translator import BaseTranslator
 from tqdm import tqdm
 
 
@@ -42,6 +44,7 @@ class GoogleCloudTranslate(BaseTranslator):
             source_language=source_language,
             dest_language=dest_language,
         )
+        self.max_sentence_batches = 50
 
     async def translate_sentences(self):
         translating_img_ids = []
@@ -54,8 +57,8 @@ class GoogleCloudTranslate(BaseTranslator):
             infos_dict[image_id] = image
             if str(image_id) not in self._checkpoint_dictionary:
                 translating_img_ids.append(image_id)
-                translating_sentences.append(
-                    "\n".join([sentence["raw"] for sentence in image["sentences"]])
+                translating_sentences.extend(
+                    [[sentence["raw"] for sentence in image["sentences"]]]
                 )
 
             if (
@@ -66,7 +69,7 @@ class GoogleCloudTranslate(BaseTranslator):
                 parse_coros = []
                 for index, result in enumerate(results):
                     image_id = translating_img_ids[index]
-                    translated_sentences = result.split("\n")
+                    translated_sentences = result
                     translation_dict = infos_dict[image_id]
                     for sentid, sentence in enumerate(translation_dict["sentences"]):
                         sentence["raw"] = translated_sentences[sentid]
@@ -84,24 +87,35 @@ class GoogleCloudTranslate(BaseTranslator):
                 translating_img_ids = []
                 translating_sentences = []
 
-    async def send_sentences_to_api(self, sentences: [str]) -> (int, [str]):
+    async def send_sentences_to_api(self, sentences_matrix: [[str]]) -> (int, [str]):
         """
-        Send sentences to libretranslate api and returns translated sentences
+        Send sentences to googlecloudtranslate api and returns translated sentences
         """
-        json_data = {
-            "q": sentences,
-            "source": self.source_language,
-            "target": self.dest_language,
-            "format": "text",
-            "api_key": "",
-        }
-        async with httpx.AsyncClient(timeout=300) as client:
-            response = await client.post(
-                "http://127.0.0.1:5000/translate", json=json_data
-            )
-            translated_sentences = response.json()["translatedText"]
+        project_id = "xenon-effect-420413"  # You need to set your own project id
 
-        return translated_sentences
+        client = translate.TranslationServiceClient()
+
+        location = "global"
+
+        parent = f"projects/{project_id}/locations/{location}"
+
+        translated_sentences_matrix = []
+        for sentence_list in sentences_matrix:
+            response = client.translate_text(
+                request={
+                    "parent": parent,
+                    "contents": sentence_list,
+                    "mime_type": "text/plain",  # mime types: text/plain, text/html
+                    "source_language_code": "en-US",
+                    "target_language_code": "pt-BR",
+                }
+            )
+
+            translated_sentences_matrix.append([
+                translation.translated_text for translation in response.translations
+            ])
+
+        return translated_sentences_matrix
 
 
 async def main():
