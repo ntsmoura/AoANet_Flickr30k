@@ -68,7 +68,9 @@ def get_self_critical_reward(greedy_res, data_gts, gen_result, opt):
         print("Bleu scores:", _[3])
     else:
         bleu_scores = 0
-    scores = opt.cider_reward_weight * cider_scores + opt.bleu_reward_weight * bleu_scores
+    scores = (
+        opt.cider_reward_weight * cider_scores + opt.bleu_reward_weight * bleu_scores
+    )
 
     scores = scores[:batch_size] - scores[batch_size:]
 

@@ -15,7 +15,9 @@ import argparse
 parser = argparse.ArgumentParser()
 
 # output_dir
-parser.add_argument("--downloaded_feats", default="data/bu_data", help="downloaded feature directory")
+parser.add_argument(
+    "--downloaded_feats", default="data/bu_data", help="downloaded feature directory"
+)
 parser.add_argument("--output_dir", default="data/cocobu", help="output feature files")
 
 args = parser.parse_args()
@@ -43,9 +45,18 @@ for infile in infiles:
             item["image_id"] = int(item["image_id"])
             item["num_boxes"] = int(item["num_boxes"])
             for field in ["boxes", "features"]:
-                item[field] = np.frombuffer(base64.decodestring(item[field]), dtype=np.float32).reshape(
-                    (item["num_boxes"], -1)
-                )
-            np.savez_compressed(os.path.join(args.output_dir + "_att", str(item["image_id"])), feat=item["features"])
-            np.save(os.path.join(args.output_dir + "_fc", str(item["image_id"])), item["features"].mean(0))
-            np.save(os.path.join(args.output_dir + "_box", str(item["image_id"])), item["boxes"])
+                item[field] = np.frombuffer(
+                    base64.decodestring(item[field]), dtype=np.float32
+                ).reshape((item["num_boxes"], -1))
+            np.savez_compressed(
+                os.path.join(args.output_dir + "_att", str(item["image_id"])),
+                feat=item["features"],
+            )
+            np.save(
+                os.path.join(args.output_dir + "_fc", str(item["image_id"])),
+                item["features"].mean(0),
+            )
+            np.save(
+                os.path.join(args.output_dir + "_box", str(item["image_id"])),
+                item["boxes"],
+            )

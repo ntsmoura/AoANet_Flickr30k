@@ -11,12 +11,27 @@ import torch.nn.functional as F
 import misc.utils as utils
 
 from .AttModel import pack_wrapper, AttModel, Attention
-from .TransformerModel import LayerNorm, attention, clones, SublayerConnection, PositionwiseFeedForward
+from .TransformerModel import (
+    LayerNorm,
+    attention,
+    clones,
+    SublayerConnection,
+    PositionwiseFeedForward,
+)
 
 
 class MultiHeadedDotAttention(nn.Module):
     def __init__(
-        self, h, d_model, dropout=0.1, scale=1, project_k_v=1, use_output_layer=1, do_aoa=0, norm_q=0, dropout_aoa=0.3
+        self,
+        h,
+        d_model,
+        dropout=0.1,
+        scale=1,
+        project_k_v=1,
+        use_output_layer=1,
+        do_aoa=0,
+        norm_q=0,
+        dropout_aoa=0.3,
     ):
         super(MultiHeadedDotAttention, self).__init__()
         assert d_model * scale % h == 0
@@ -40,7 +55,9 @@ class MultiHeadedDotAttention(nn.Module):
         # apply aoa after attention?
         self.use_aoa = do_aoa
         if self.use_aoa:
-            self.aoa_layer = nn.Sequential(nn.Linear((1 + scale) * d_model, 2 * d_model), nn.GLU())
+            self.aoa_layer = nn.Sequential(
+                nn.Linear((1 + scale) * d_model, 2 * d_model), nn.GLU()
+            )
             # dropout to the input of AoA layer
             if dropout_aoa > 0:
                 self.dropout_aoa = nn.Dropout(p=dropout_aoa)
@@ -73,7 +90,11 @@ class MultiHeadedDotAttention(nn.Module):
 
         # Do all the linear projections in batch from d_model => h x d_k
         if self.project_k_v == 0:
-            query_ = self.linears[0](query).view(nbatches, -1, self.h, self.d_k).transpose(1, 2)
+            query_ = (
+                self.linears[0](query)
+                .view(nbatches, -1, self.h, self.d_k)
+                .transpose(1, 2)
+            )
             key_ = key.view(nbatches, -1, self.h, self.d_k).transpose(1, 2)
             value_ = value.view(nbatches, -1, self.h, self.d_k).transpose(1, 2)
         else:
@@ -128,7 +149,10 @@ class AoA_Refiner_Core(nn.Module):
             dropout_aoa=getattr(opt, "dropout_aoa", 0.3),
         )
         layer = AoA_Refiner_Layer(
-            opt.rnn_size, attn, PositionwiseFeedForward(opt.rnn_size, 2048, 0.1) if opt.use_ff else None, 0.1
+            opt.rnn_size,
+            attn,
+            PositionwiseFeedForward(opt.rnn_size, 2048, 0.1) if opt.use_ff else None,
+            0.1,
         )
         self.layers = clones(layer, 6)
         self.norm = LayerNorm(layer.size)
@@ -149,21 +173,31 @@ class AoA_Decoder_Core(nn.Module):
         self.use_ctx_drop = getattr(opt, "ctx_drop", 0)
         self.out_res = getattr(opt, "out_res", 0)
         self.decoder_type = getattr(opt, "decoder_type", "AoA")
-        self.att_lstm = nn.LSTMCell(opt.input_encoding_size + opt.rnn_size, opt.rnn_size)  # we, fc, h^2_t-1
+        self.att_lstm = nn.LSTMCell(
+            opt.input_encoding_size + opt.rnn_size, opt.rnn_size
+        )  # we, fc, h^2_t-1
         self.out_drop = nn.Dropout(self.drop_prob_lm)
 
         if self.decoder_type == "AoA":
             # AoA layer
             self.att2ctx = nn.Sequential(
-                nn.Linear(self.d_model * opt.multi_head_scale + opt.rnn_size, 2 * opt.rnn_size), nn.GLU()
+                nn.Linear(
+                    self.d_model * opt.multi_head_scale + opt.rnn_size, 2 * opt.rnn_size
+                ),
+                nn.GLU(),
             )
         elif self.decoder_type == "LSTM":
             # LSTM layer
-            self.att2ctx = nn.LSTMCell(self.d_model * opt.multi_head_scale + opt.rnn_size, opt.rnn_size)
+            self.att2ctx = nn.LSTMCell(
+                self.d_model * opt.multi_head_scale + opt.rnn_size, opt.rnn_size
+            )
         else:
             # Base linear layer
             self.att2ctx = nn.Sequential(
-                nn.Linear(self.d_model * opt.multi_head_scale + opt.rnn_size, opt.rnn_size), nn.ReLU()
+                nn.Linear(
+                    self.d_model * opt.multi_head_scale + opt.rnn_size, opt.rnn_size
+                ),
+                nn.ReLU(),
             )
 
         # if opt.use_multi_head == 1: # TODO, not implemented for now
@@ -189,14 +223,19 @@ class AoA_Decoder_Core(nn.Module):
     def forward(self, xt, mean_feats, att_feats, p_att_feats, state, att_masks=None):
         # state[0][1] is the context vector at the last step
         h_att, c_att = self.att_lstm(
-            torch.cat([xt, mean_feats + self.ctx_drop(state[0][1])], 1), (state[0][0], state[1][0])
+            torch.cat([xt, mean_feats + self.ctx_drop(state[0][1])], 1),
+            (state[0][0], state[1][0]),
         )
 
         if self.use_multi_head == 2:
             att = self.attention(
                 h_att,
                 p_att_feats.narrow(2, 0, self.multi_head_scale * self.d_model),
-                p_att_feats.narrow(2, self.multi_head_scale * self.d_model, self.multi_head_scale * self.d_model),
+                p_att_feats.narrow(
+                    2,
+                    self.multi_head_scale * self.d_model,
+                    self.multi_head_scale * self.d_model,
+                ),
                 att_masks,
             )
         else:
@@ -227,7 +266,9 @@ class AoAModel(AttModel):
         self.use_mean_feats = getattr(opt, "mean_feats", 1)
         if opt.use_multi_head == 2:
             del self.ctx2att
-            self.ctx2att = nn.Linear(opt.rnn_size, 2 * opt.multi_head_scale * opt.rnn_size)
+            self.ctx2att = nn.Linear(
+                opt.rnn_size, 2 * opt.multi_head_scale * opt.rnn_size
+            )
 
         if self.use_mean_feats:
             del self.fc_embed
@@ -249,7 +290,9 @@ class AoAModel(AttModel):
             if att_masks is None:
                 mean_feats = torch.mean(att_feats, dim=1)
             else:
-                mean_feats = torch.sum(att_feats * att_masks.unsqueeze(-1), 1) / torch.sum(att_masks.unsqueeze(-1), 1)
+                mean_feats = torch.sum(
+                    att_feats * att_masks.unsqueeze(-1), 1
+                ) / torch.sum(att_masks.unsqueeze(-1), 1)
         else:
             mean_feats = self.fc_embed(fc_feats)
 

@@ -34,7 +34,6 @@ class CaptionModel(nn.Module):
         return getattr(self, "_" + mode)(*args, **kwargs)
 
     def beam_search(self, init_state, init_logprobs, *args, **kwargs):
-
         # function computes the similarity score to be augmented
         def add_diversity(beam_seq_table, logprobsf, t, divm, diversity_lambda, bdash):
             local_time = t - divm
@@ -44,13 +43,23 @@ class CaptionModel(nn.Module):
                 for sub_beam in range(bdash):
                     for prev_labels in range(bdash):
                         logprobsf[sub_beam][prev_decisions[prev_labels]] = (
-                            logprobsf[sub_beam][prev_decisions[prev_labels]] - diversity_lambda
+                            logprobsf[sub_beam][prev_decisions[prev_labels]]
+                            - diversity_lambda
                         )
             return unaug_logprobsf
 
         # does one step of classical beam search
 
-        def beam_step(logprobsf, unaug_logprobsf, beam_size, t, beam_seq, beam_seq_logprobs, beam_logprobs_sum, state):
+        def beam_step(
+            logprobsf,
+            unaug_logprobsf,
+            beam_size,
+            t,
+            beam_seq,
+            beam_seq_logprobs,
+            beam_logprobs_sum,
+            state,
+        ):
             # INPUTS:
             # logprobsf: probabilities augmented after diversity
             # beam_size: obvious
@@ -75,7 +84,14 @@ class CaptionModel(nn.Module):
                     local_logprob = ys[q, c].item()
                     candidate_logprob = beam_logprobs_sum[q] + local_logprob
                     local_unaug_logprob = unaug_logprobsf[q, ix[q, c]]
-                    candidates.append({"c": ix[q, c], "q": q, "p": candidate_logprob, "r": local_unaug_logprob})
+                    candidates.append(
+                        {
+                            "c": ix[q, c],
+                            "q": q,
+                            "p": candidate_logprob,
+                            "r": local_unaug_logprob,
+                        }
+                    )
             candidates = sorted(candidates, key=lambda x: -x["p"])
 
             new_state = [_.clone() for _ in state]
@@ -93,7 +109,9 @@ class CaptionModel(nn.Module):
                 # rearrange recurrent states
                 for state_ix in range(len(new_state)):
                     #  copy over state in previous beam q to new beam at vix
-                    new_state[state_ix][:, vix] = state[state_ix][:, v["q"]]  # dimension one is time step
+                    new_state[state_ix][:, vix] = state[state_ix][
+                        :, v["q"]
+                    ]  # dimension one is time step
                 # append new end terminal at the end of this beam
                 beam_seq[t, vix] = v["c"]  # c'th word is the continuation
                 beam_seq_logprobs[t, vix] = v["r"]  # the raw logprob here
@@ -103,7 +121,9 @@ class CaptionModel(nn.Module):
 
         # Start diverse_beam_search
         opt = kwargs["opt"]
-        temperature = opt.get("temperature", 1)  # This should not affect beam search, but will affect dbs
+        temperature = opt.get(
+            "temperature", 1
+        )  # This should not affect beam search, but will affect dbs
         beam_size = opt.get("beam_size", 10)
         group_size = opt.get("group_size", 1)
         diversity_lambda = opt.get("diversity_lambda", 0.5)
@@ -113,8 +133,12 @@ class CaptionModel(nn.Module):
         bdash = beam_size // group_size  # beam per group
 
         # INITIALIZATIONS
-        beam_seq_table = [torch.LongTensor(self.seq_length, bdash).zero_() for _ in range(group_size)]
-        beam_seq_logprobs_table = [torch.FloatTensor(self.seq_length, bdash).zero_() for _ in range(group_size)]
+        beam_seq_table = [
+            torch.LongTensor(self.seq_length, bdash).zero_() for _ in range(group_size)
+        ]
+        beam_seq_logprobs_table = [
+            torch.FloatTensor(self.seq_length, bdash).zero_() for _ in range(group_size)
+        ]
         beam_logprobs_sum_table = [torch.zeros(bdash) for _ in range(group_size)]
 
         # logprobs # logprobs predicted in last time step, shape (beam_size, vocab_size+1)
@@ -128,13 +152,24 @@ class CaptionModel(nn.Module):
         args = list(args)
         if self.__class__.__name__ == "AttEnsemble":
             args = [
-                [_.chunk(group_size) if _ is not None else [None] * group_size for _ in args_] for args_ in args
+                [
+                    _.chunk(group_size) if _ is not None else [None] * group_size
+                    for _ in args_
+                ]
+                for args_ in args
             ]  # arg_name, model_name, group_name
             args = [
-                [[args[j][i][k] for i in range(len(self.models))] for j in range(len(args))] for k in range(group_size)
+                [
+                    [args[j][i][k] for i in range(len(self.models))]
+                    for j in range(len(args))
+                ]
+                for k in range(group_size)
             ]  # group_name, arg_name, model_name
         else:
-            args = [_.chunk(group_size) if _ is not None else [None] * group_size for _ in args]
+            args = [
+                _.chunk(group_size) if _ is not None else [None] * group_size
+                for _ in args
+            ]
             args = [[args[i][j] for i in range(len(args))] for j in range(group_size)]
 
         for t in range(self.seq_length + group_size - 1):
@@ -144,23 +179,32 @@ class CaptionModel(nn.Module):
                     logprobsf = logprobs_table[divm].data.float()
                     # suppress previous word
                     if decoding_constraint and t - divm > 0:
-                        logprobsf.scatter_(1, beam_seq_table[divm][t - divm - 1].unsqueeze(1).cuda(), float("-inf"))
+                        logprobsf.scatter_(
+                            1,
+                            beam_seq_table[divm][t - divm - 1].unsqueeze(1).cuda(),
+                            float("-inf"),
+                        )
                     if remove_bad_endings and t - divm > 0:
                         logprobsf[
                             torch.from_numpy(
-                                np.isin(beam_seq_table[divm][t - divm - 1].cpu().numpy(), self.bad_endings_ix).astype(
-                                    "uint8"
-                                )
+                                np.isin(
+                                    beam_seq_table[divm][t - divm - 1].cpu().numpy(),
+                                    self.bad_endings_ix,
+                                ).astype("uint8")
                             ),
                             0,
                         ] = float("-inf")
                     # suppress UNK tokens in the decoding
-                    logprobsf[:, logprobsf.size(1) - 1] = logprobsf[:, logprobsf.size(1) - 1] - 1000
+                    logprobsf[:, logprobsf.size(1) - 1] = (
+                        logprobsf[:, logprobsf.size(1) - 1] - 1000
+                    )
                     # diversity is added here
                     # the function directly modifies the logprobsf values and hence, we need to return
                     # the unaugmented ones for sorting the candidates in the end. # for historical
                     # reasons :-)
-                    unaug_logprobsf = add_diversity(beam_seq_table, logprobsf, t, divm, diversity_lambda, bdash)
+                    unaug_logprobsf = add_diversity(
+                        beam_seq_table, logprobsf, t, divm, diversity_lambda, bdash
+                    )
 
                     # infer new beams
                     (
@@ -182,14 +226,21 @@ class CaptionModel(nn.Module):
 
                     # if time's up... or if end token is reached then copy beams
                     for vix in range(bdash):
-                        if beam_seq_table[divm][t - divm, vix] == 0 or t == self.seq_length + divm - 1:
+                        if (
+                            beam_seq_table[divm][t - divm, vix] == 0
+                            or t == self.seq_length + divm - 1
+                        ):
                             final_beam = {
                                 "seq": beam_seq_table[divm][:, vix].clone(),
                                 "logps": beam_seq_logprobs_table[divm][:, vix].clone(),
-                                "unaug_p": beam_seq_logprobs_table[divm][:, vix].sum().item(),
+                                "unaug_p": beam_seq_logprobs_table[divm][:, vix]
+                                .sum()
+                                .item(),
                                 "p": beam_logprobs_sum_table[divm][vix].item(),
                             }
-                            final_beam["p"] = length_penalty(t - divm + 1, final_beam["p"])
+                            final_beam["p"] = length_penalty(
+                                t - divm + 1, final_beam["p"]
+                            )
                             done_beams_table[divm].append(final_beam)
                             # don't continue beams from finished sequences
                             beam_logprobs_sum_table[divm][vix] = -1000
@@ -200,10 +251,15 @@ class CaptionModel(nn.Module):
                     logprobs_table[divm], state_table[divm] = self.get_logprobs_state(
                         it.cuda(), *(args[divm] + [state_table[divm]])
                     )
-                    logprobs_table[divm] = F.log_softmax(logprobs_table[divm] / temperature, dim=-1)
+                    logprobs_table[divm] = F.log_softmax(
+                        logprobs_table[divm] / temperature, dim=-1
+                    )
 
         # all beams are sorted by their log-probabilities
-        done_beams_table = [sorted(done_beams_table[i], key=lambda x: -x["p"])[:bdash] for i in range(group_size)]
+        done_beams_table = [
+            sorted(done_beams_table[i], key=lambda x: -x["p"])[:bdash]
+            for i in range(group_size)
+        ]
         done_beams = reduce(lambda a, b: a + b, done_beams_table)
         return done_beams
 
@@ -223,7 +279,9 @@ class CaptionModel(nn.Module):
 
             _logprobs = gumbel_softmax_sample(logprobs, temperature)
             _, it = torch.max(_logprobs.data, 1)
-            sampleLogprobs = logprobs.gather(1, it.unsqueeze(1))  # gather the logprobs at sampled positions
+            sampleLogprobs = logprobs.gather(
+                1, it.unsqueeze(1)
+            )  # gather the logprobs at sampled positions
         else:
             logprobs = logprobs / temperature
             if sample_method.startswith("top"):  # topk sampling
@@ -231,7 +289,9 @@ class CaptionModel(nn.Module):
                 if 0 < top_num < 1:
                     # nucleus sampling from # The Curious Case of Neural Text Degeneration
                     probs = F.softmax(logprobs, dim=1)
-                    sorted_probs, sorted_indices = torch.sort(probs, descending=True, dim=1)
+                    sorted_probs, sorted_indices = torch.sort(
+                        probs, descending=True, dim=1
+                    )
                     _cumsum = sorted_probs.cumsum(1)
                     mask = _cumsum < top_num
                     mask = torch.cat([torch.ones_like(mask[:, :1]), mask[:, :-1]], 1)
@@ -245,5 +305,7 @@ class CaptionModel(nn.Module):
                     tmp = tmp.scatter(1, indices, topk)
                     logprobs = tmp
             it = torch.distributions.Categorical(logits=logprobs.detach()).sample()
-            sampleLogprobs = logprobs.gather(1, it.unsqueeze(1))  # gather the logprobs at sampled positions
+            sampleLogprobs = logprobs.gather(
+                1, it.unsqueeze(1)
+            )  # gather the logprobs at sampled positions
         return it, sampleLogprobs

@@ -21,7 +21,12 @@ import math
 import numpy as np
 
 from .CaptionModel import CaptionModel
-from .AttModel import sort_pack_padded_sequence, pad_unsort_packed_sequence, pack_wrapper, AttModel
+from .AttModel import (
+    sort_pack_padded_sequence,
+    pad_unsort_packed_sequence,
+    pack_wrapper,
+    AttModel,
+)
 
 
 class EncoderDecoder(nn.Module):
@@ -200,7 +205,8 @@ class MultiHeadedAttention(nn.Module):
 
         # 1) Do all the linear projections in batch from d_model => h x d_k
         query, key, value = [
-            l(x).view(nbatches, -1, self.h, self.d_k).transpose(1, 2) for l, x in zip(self.linears, (query, key, value))
+            l(x).view(nbatches, -1, self.h, self.d_k).transpose(1, 2)
+            for l, x in zip(self.linears, (query, key, value))
         ]
 
         # 2) Apply attention on all the projected vectors in batch.
@@ -244,7 +250,9 @@ class PositionalEncoding(nn.Module):
         # Compute the positional encodings once in log space.
         pe = torch.zeros(max_len, d_model)
         position = torch.arange(0, max_len).unsqueeze(1).float()
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * -(math.log(10000.0) / d_model))
+        div_term = torch.exp(
+            torch.arange(0, d_model, 2).float() * -(math.log(10000.0) / d_model)
+        )
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         pe = pe.unsqueeze(0)
@@ -256,7 +264,9 @@ class PositionalEncoding(nn.Module):
 
 
 class TransformerModel(AttModel):
-    def make_model(self, src_vocab, tgt_vocab, N=6, d_model=512, d_ff=2048, h=8, dropout=0.1):
+    def make_model(
+        self, src_vocab, tgt_vocab, N=6, d_model=512, d_ff=2048, h=8, dropout=0.1
+    ):
         "Helper: Construct a model from hyperparameters."
         c = copy.deepcopy
         attn = MultiHeadedAttention(h, d_model)
@@ -287,8 +297,16 @@ class TransformerModel(AttModel):
         self.att_embed = nn.Sequential(
             *(
                 ((nn.BatchNorm1d(self.att_feat_size),) if self.use_bn else ())
-                + (nn.Linear(self.att_feat_size, self.input_encoding_size), nn.ReLU(), nn.Dropout(self.drop_prob_lm))
-                + ((nn.BatchNorm1d(self.input_encoding_size),) if self.use_bn == 2 else ())
+                + (
+                    nn.Linear(self.att_feat_size, self.input_encoding_size),
+                    nn.ReLU(),
+                    nn.Dropout(self.drop_prob_lm),
+                )
+                + (
+                    (nn.BatchNorm1d(self.input_encoding_size),)
+                    if self.use_bn == 2
+                    else ()
+                )
             )
         )
 
@@ -300,7 +318,13 @@ class TransformerModel(AttModel):
         del self.ctx2att
 
         tgt_vocab = self.vocab_size + 1
-        self.model = self.make_model(0, tgt_vocab, N=opt.num_layers, d_model=opt.input_encoding_size, d_ff=opt.rnn_size)
+        self.model = self.make_model(
+            0,
+            tgt_vocab,
+            N=opt.num_layers,
+            d_model=opt.input_encoding_size,
+            d_ff=opt.rnn_size,
+        )
 
     def logit(self, x):  # unsafe way
         return self.model.generator.proj(x)
@@ -309,7 +333,9 @@ class TransformerModel(AttModel):
         return []
 
     def _prepare_feature(self, fc_feats, att_feats, att_masks):
-        att_feats, seq, att_masks, seq_mask = self._prepare_feature_forward(att_feats, att_masks)
+        att_feats, seq, att_masks, seq_mask = self._prepare_feature_forward(
+            att_feats, att_masks
+        )
         memory = self.model.encode(att_feats, att_masks)
 
         return fc_feats[..., :1], att_feats[..., :1], memory, att_masks
@@ -337,7 +363,9 @@ class TransformerModel(AttModel):
         return att_feats, seq, att_masks, seq_mask
 
     def _forward(self, fc_feats, att_feats, seq, att_masks=None):
-        att_feats, seq, att_masks, seq_mask = self._prepare_feature_forward(att_feats, att_masks, seq)
+        att_feats, seq, att_masks, seq_mask = self._prepare_feature_forward(
+            att_feats, att_masks, seq
+        )
 
         out = self.model(att_feats, seq, att_masks, seq_mask)
 
@@ -353,5 +381,7 @@ class TransformerModel(AttModel):
             ys = it.unsqueeze(1)
         else:
             ys = torch.cat([state[0][0], it.unsqueeze(1)], dim=1)
-        out = self.model.decode(memory, mask, ys, subsequent_mask(ys.size(1)).to(memory.device))
+        out = self.model.decode(
+            memory, mask, ys, subsequent_mask(ys.size(1)).to(memory.device)
+        )
         return out[:, -1], [ys.unsqueeze(0)]

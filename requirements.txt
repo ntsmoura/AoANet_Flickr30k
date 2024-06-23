@@ -6,3 +6,4 @@ six
 libretranslate
 httpx
 tqdm
+google-cloud-translate

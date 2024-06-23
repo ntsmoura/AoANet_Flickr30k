@@ -63,10 +63,17 @@ def parse_opt():
         ),
     )
     parser.add_argument(
-        "--rnn_size", type=int, default=512, help="size of the rnn in number of hidden nodes in each layer"
+        "--rnn_size",
+        type=int,
+        default=512,
+        help="size of the rnn in number of hidden nodes in each layer",
     )
-    parser.add_argument("--num_layers", type=int, default=1, help="number of layers in the RNN")
-    parser.add_argument("--rnn_type", type=str, default="lstm", help="rnn, gru, or lstm")
+    parser.add_argument(
+        "--num_layers", type=int, default=1, help="number of layers in the RNN"
+    )
+    parser.add_argument(
+        "--rnn_type", type=str, default="lstm", help="rnn, gru, or lstm"
+    )
     parser.add_argument(
         "--input_encoding_size",
         type=int,
@@ -79,9 +86,15 @@ def parse_opt():
         default=512,
         help="the hidden size of the attention MLP; only useful in show_attend_tell; 0 if not using hidden layer",
     )
-    parser.add_argument("--fc_feat_size", type=int, default=2048, help="2048 for resnet, 4096 for vgg")
-    parser.add_argument("--att_feat_size", type=int, default=2048, help="2048 for resnet, 512 for vgg")
-    parser.add_argument("--logit_layers", type=int, default=1, help="number of layers in the RNN")
+    parser.add_argument(
+        "--fc_feat_size", type=int, default=2048, help="2048 for resnet, 4096 for vgg"
+    )
+    parser.add_argument(
+        "--att_feat_size", type=int, default=2048, help="2048 for resnet, 512 for vgg"
+    )
+    parser.add_argument(
+        "--logit_layers", type=int, default=1, help="number of layers in the RNN"
+    )
 
     parser.add_argument(
         "--use_bn",
@@ -94,16 +107,37 @@ def parse_opt():
     )
 
     # AoA settings
-    parser.add_argument("--mean_feats", type=int, default=1, help="use mean pooling of feats?")
-    parser.add_argument("--refine", type=int, default=1, help="refining feature vectors?")
-    parser.add_argument("--refine_aoa", type=int, default=1, help="use aoa in the refining module?")
-    parser.add_argument("--use_ff", type=int, default=1, help="keep feed-forward layer in the refining module?")
-    parser.add_argument("--dropout_aoa", type=float, default=0.3, help="dropout_aoa in the refining module?")
+    parser.add_argument(
+        "--mean_feats", type=int, default=1, help="use mean pooling of feats?"
+    )
+    parser.add_argument(
+        "--refine", type=int, default=1, help="refining feature vectors?"
+    )
+    parser.add_argument(
+        "--refine_aoa", type=int, default=1, help="use aoa in the refining module?"
+    )
+    parser.add_argument(
+        "--use_ff",
+        type=int,
+        default=1,
+        help="keep feed-forward layer in the refining module?",
+    )
+    parser.add_argument(
+        "--dropout_aoa",
+        type=float,
+        default=0.3,
+        help="dropout_aoa in the refining module?",
+    )
 
     parser.add_argument(
-        "--ctx_drop", type=int, default=0, help="apply dropout to the context vector before fed into LSTM?"
+        "--ctx_drop",
+        type=int,
+        default=0,
+        help="apply dropout to the context vector before fed into LSTM?",
     )
-    parser.add_argument("--decoder_type", type=str, default="AoA", help="AoA, LSTM, base")
+    parser.add_argument(
+        "--decoder_type", type=str, default="AoA", help="AoA, LSTM, base"
+    )
     parser.add_argument(
         "--use_multi_head",
         type=int,
@@ -113,22 +147,40 @@ def parse_opt():
             " head."
         ),
     )
-    parser.add_argument("--num_heads", type=int, default=8, help="number of attention heads?")
+    parser.add_argument(
+        "--num_heads", type=int, default=8, help="number of attention heads?"
+    )
     parser.add_argument("--multi_head_scale", type=int, default=1, help="scale q,k,v?")
 
-    parser.add_argument("--use_warmup", type=int, default=0, help="warm up the learing rate?")
+    parser.add_argument(
+        "--use_warmup", type=int, default=0, help="warm up the learing rate?"
+    )
     parser.add_argument("--acc_steps", type=int, default=1, help="accumulation steps")
 
     # feature manipulation
-    parser.add_argument("--norm_att_feat", type=int, default=0, help="If normalize attention features")
+    parser.add_argument(
+        "--norm_att_feat", type=int, default=0, help="If normalize attention features"
+    )
     parser.add_argument("--use_box", type=int, default=0, help="If use box features")
-    parser.add_argument("--norm_box_feat", type=int, default=0, help="If use box, do we normalize box feature")
+    parser.add_argument(
+        "--norm_box_feat",
+        type=int,
+        default=0,
+        help="If use box, do we normalize box feature",
+    )
 
     # Optimization: General
     parser.add_argument("--max_epochs", type=int, default=-1, help="number of epochs")
     parser.add_argument("--batch_size", type=int, default=16, help="minibatch size")
-    parser.add_argument("--grad_clip", type=float, default=0.1, help="clip gradients at this value")  # 5.,
-    parser.add_argument("--drop_prob_lm", type=float, default=0.5, help="strength of dropout in the Language Model RNN")
+    parser.add_argument(
+        "--grad_clip", type=float, default=0.1, help="clip gradients at this value"
+    )  # 5.,
+    parser.add_argument(
+        "--drop_prob_lm",
+        type=float,
+        default=0.5,
+        help="strength of dropout in the Language Model RNN",
+    )
     parser.add_argument(
         "--self_critical_after",
         type=int,
@@ -155,14 +207,29 @@ def parse_opt():
             " More is not better. Set this to 1 for faster runtime but a bit worse performance."
         ),
     )
-    parser.add_argument("--max_length", type=int, default=20, help="Maximum length during sampling")
-    parser.add_argument("--length_penalty", type=str, default="", help="wu_X or avg_X, X is the alpha")
-    parser.add_argument("--block_trigrams", type=int, default=0, help="block repeated trigram.")
-    parser.add_argument("--remove_bad_endings", type=int, default=0, help="Remove bad endings")
+    parser.add_argument(
+        "--max_length", type=int, default=20, help="Maximum length during sampling"
+    )
+    parser.add_argument(
+        "--length_penalty", type=str, default="", help="wu_X or avg_X, X is the alpha"
+    )
+    parser.add_argument(
+        "--block_trigrams", type=int, default=0, help="block repeated trigram."
+    )
+    parser.add_argument(
+        "--remove_bad_endings", type=int, default=0, help="Remove bad endings"
+    )
 
     # Optimization: for the Language Model
-    parser.add_argument("--optim", type=str, default="adam", help="what update to use? rmsprop|sgd|sgdmom|adagrad|adam")
-    parser.add_argument("--learning_rate", type=float, default=4e-4, help="learning rate")
+    parser.add_argument(
+        "--optim",
+        type=str,
+        default="adam",
+        help="what update to use? rmsprop|sgd|sgdmom|adagrad|adam",
+    )
+    parser.add_argument(
+        "--learning_rate", type=float, default=4e-4, help="learning rate"
+    )
     parser.add_argument(
         "--learning_rate_decay_start",
         type=int,
@@ -182,9 +249,14 @@ def parse_opt():
         help="every how many iterations thereafter to drop LR?(in epoch)",
     )
     parser.add_argument("--optim_alpha", type=float, default=0.9, help="alpha for adam")
-    parser.add_argument("--optim_beta", type=float, default=0.999, help="beta used for adam")
     parser.add_argument(
-        "--optim_epsilon", type=float, default=1e-8, help="epsilon that goes into denominator for smoothing"
+        "--optim_beta", type=float, default=0.999, help="beta used for adam"
+    )
+    parser.add_argument(
+        "--optim_epsilon",
+        type=float,
+        default=1e-8,
+        help="epsilon that goes into denominator for smoothing",
     )
     parser.add_argument("--weight_decay", type=float, default=0, help="weight_decay")
     # Transformer
@@ -195,7 +267,10 @@ def parse_opt():
     parser.add_argument("--reduce_on_plateau", action="store_true", help="")
 
     parser.add_argument(
-        "--scheduled_sampling_start", type=int, default=-1, help="at what iteration to start decay gt probability"
+        "--scheduled_sampling_start",
+        type=int,
+        default=-1,
+        help="at what iteration to start decay gt probability",
     )
     parser.add_argument(
         "--scheduled_sampling_increase_every",
@@ -204,10 +279,16 @@ def parse_opt():
         help="every how many iterations thereafter to gt probability",
     )
     parser.add_argument(
-        "--scheduled_sampling_increase_prob", type=float, default=0.05, help="How much to update the prob"
+        "--scheduled_sampling_increase_prob",
+        type=float,
+        default=0.05,
+        help="How much to update the prob",
     )
     parser.add_argument(
-        "--scheduled_sampling_max_prob", type=float, default=0.25, help="Maximum scheduled sampling prob."
+        "--scheduled_sampling_max_prob",
+        type=float,
+        default=0.25,
+        help="Maximum scheduled sampling prob.",
     )
 
     # Evaluation/Checkpointing
@@ -218,10 +299,23 @@ def parse_opt():
         help="how many images to use when periodically evaluating the validation loss? (-1 = all)",
     )
     parser.add_argument(
-        "--save_checkpoint_every", type=int, default=2500, help="how often to save a model checkpoint (in iterations)?"
+        "--save_checkpoint_every",
+        type=int,
+        default=2500,
+        help="how often to save a model checkpoint (in iterations)?",
     )
-    parser.add_argument("--save_history_ckpt", type=int, default=0, help="If save checkpoints at every save point")
-    parser.add_argument("--checkpoint_path", type=str, default="save", help="directory to store checkpointed models")
+    parser.add_argument(
+        "--save_history_ckpt",
+        type=int,
+        default=0,
+        help="If save checkpoints at every save point",
+    )
+    parser.add_argument(
+        "--checkpoint_path",
+        type=str,
+        default="save",
+        help="directory to store checkpointed models",
+    )
     parser.add_argument(
         "--language_eval",
         type=int,
@@ -238,7 +332,10 @@ def parse_opt():
         help="How often do we snapshot losses, for inclusion in the progress dump? (0 = disable)",
     )
     parser.add_argument(
-        "--load_best_score", type=int, default=1, help="Do we load previous best score when resuming training."
+        "--load_best_score",
+        type=int,
+        default=1,
+        help="Do we load previous best score when resuming training.",
     )
 
     # misc
@@ -248,11 +345,23 @@ def parse_opt():
         default="",
         help="an id identifying this run/job. used in cross-val and appended when writing progress files",
     )
-    parser.add_argument("--train_only", type=int, default=0, help="if true then use 80k, else use 110k")
+    parser.add_argument(
+        "--train_only", type=int, default=0, help="if true then use 80k, else use 110k"
+    )
 
     # Reward
-    parser.add_argument("--cider_reward_weight", type=float, default=1, help="The reward weight from cider")
-    parser.add_argument("--bleu_reward_weight", type=float, default=0, help="The reward weight from bleu4")
+    parser.add_argument(
+        "--cider_reward_weight",
+        type=float,
+        default=1,
+        help="The reward weight from cider",
+    )
+    parser.add_argument(
+        "--bleu_reward_weight",
+        type=float,
+        default=0,
+        help="The reward weight from bleu4",
+    )
 
     args = parser.parse_args()
 
@@ -261,14 +370,24 @@ def parse_opt():
     assert args.num_layers > 0, "num_layers should be greater than 0"
     assert args.input_encoding_size > 0, "input_encoding_size should be greater than 0"
     assert args.batch_size > 0, "batch_size should be greater than 0"
-    assert args.drop_prob_lm >= 0 and args.drop_prob_lm < 1, "drop_prob_lm should be between 0 and 1"
+    assert (
+        args.drop_prob_lm >= 0 and args.drop_prob_lm < 1
+    ), "drop_prob_lm should be between 0 and 1"
     assert args.seq_per_img > 0, "seq_per_img should be greater than 0"
     assert args.beam_size > 0, "beam_size should be greater than 0"
-    assert args.save_checkpoint_every > 0, "save_checkpoint_every should be greater than 0"
+    assert (
+        args.save_checkpoint_every > 0
+    ), "save_checkpoint_every should be greater than 0"
     assert args.losses_log_every > 0, "losses_log_every should be greater than 0"
-    assert args.language_eval == 0 or args.language_eval == 1, "language_eval should be 0 or 1"
-    assert args.load_best_score == 0 or args.load_best_score == 1, "language_eval should be 0 or 1"
-    assert args.train_only == 0 or args.train_only == 1, "language_eval should be 0 or 1"
+    assert (
+        args.language_eval == 0 or args.language_eval == 1
+    ), "language_eval should be 0 or 1"
+    assert (
+        args.load_best_score == 0 or args.load_best_score == 1
+    ), "language_eval should be 0 or 1"
+    assert (
+        args.train_only == 0 or args.train_only == 1
+    ), "language_eval should be 0 or 1"
 
     return args
 
@@ -276,7 +395,10 @@ def parse_opt():
 def add_eval_options(parser):
     # Basic options
     parser.add_argument(
-        "--batch_size", type=int, default=0, help="if > 0 then overrule, otherwise load from checkpoint."
+        "--batch_size",
+        type=int,
+        default=0,
+        help="if > 0 then overrule, otherwise load from checkpoint.",
     )
     parser.add_argument(
         "--num_images",
@@ -294,18 +416,30 @@ def add_eval_options(parser):
         ),
     )
     parser.add_argument(
-        "--dump_images", type=int, default=1, help="Dump images into vis/imgs folder for vis? (1=yes,0=no)"
+        "--dump_images",
+        type=int,
+        default=1,
+        help="Dump images into vis/imgs folder for vis? (1=yes,0=no)",
     )
     parser.add_argument(
-        "--dump_json", type=int, default=1, help="Dump json with predictions into vis folder? (1=yes,0=no)"
+        "--dump_json",
+        type=int,
+        default=1,
+        help="Dump json with predictions into vis folder? (1=yes,0=no)",
     )
     parser.add_argument(
-        "--dump_path", type=int, default=0, help="Write image paths along with predictions into vis json? (1=yes,0=no)"
+        "--dump_path",
+        type=int,
+        default=0,
+        help="Write image paths along with predictions into vis json? (1=yes,0=no)",
     )
 
     # Sampling options
     parser.add_argument(
-        "--sample_method", type=str, default="greedy", help="greedy; sample; gumbel; top<int>, top<0-1>"
+        "--sample_method",
+        type=str,
+        default="greedy",
+        help="greedy; sample; gumbel; top<int>, top<0-1>",
     )
     parser.add_argument(
         "--beam_size",
@@ -316,8 +450,12 @@ def add_eval_options(parser):
             " faster runtime but a bit worse performance."
         ),
     )
-    parser.add_argument("--max_length", type=int, default=20, help="Maximum length during sampling")
-    parser.add_argument("--length_penalty", type=str, default="", help="wu_X or avg_X, X is the alpha")
+    parser.add_argument(
+        "--max_length", type=int, default=20, help="Maximum length during sampling"
+    )
+    parser.add_argument(
+        "--length_penalty", type=str, default="", help="wu_X or avg_X, X is the alpha"
+    )
     parser.add_argument(
         "--group_size",
         type=int,
@@ -341,9 +479,18 @@ def add_eval_options(parser):
             " predictions."
         ),
     )
-    parser.add_argument("--decoding_constraint", type=int, default=0, help="If 1, not allowing same word in a row")
-    parser.add_argument("--block_trigrams", type=int, default=0, help="block repeated trigram.")
-    parser.add_argument("--remove_bad_endings", type=int, default=0, help="Remove bad endings")
+    parser.add_argument(
+        "--decoding_constraint",
+        type=int,
+        default=0,
+        help="If 1, not allowing same word in a row",
+    )
+    parser.add_argument(
+        "--block_trigrams", type=int, default=0, help="block repeated trigram."
+    )
+    parser.add_argument(
+        "--remove_bad_endings", type=int, default=0, help="Remove bad endings"
+    )
     # For evaluation on a folder of images:
     parser.add_argument(
         "--image_folder",
@@ -359,16 +506,28 @@ def add_eval_options(parser):
     )
     # For evaluation on MSCOCO images from some split:
     parser.add_argument(
-        "--input_fc_dir", type=str, default="", help="path to the h5file containing the preprocessed dataset"
+        "--input_fc_dir",
+        type=str,
+        default="",
+        help="path to the h5file containing the preprocessed dataset",
     )
     parser.add_argument(
-        "--input_att_dir", type=str, default="", help="path to the h5file containing the preprocessed dataset"
+        "--input_att_dir",
+        type=str,
+        default="",
+        help="path to the h5file containing the preprocessed dataset",
     )
     parser.add_argument(
-        "--input_box_dir", type=str, default="", help="path to the h5file containing the preprocessed dataset"
+        "--input_box_dir",
+        type=str,
+        default="",
+        help="path to the h5file containing the preprocessed dataset",
     )
     parser.add_argument(
-        "--input_label_h5", type=str, default="", help="path to the h5file containing the preprocessed dataset"
+        "--input_label_h5",
+        type=str,
+        default="",
+        help="path to the h5file containing the preprocessed dataset",
     )
     parser.add_argument(
         "--input_json",
@@ -377,7 +536,10 @@ def add_eval_options(parser):
         help="path to the json file containing additional info and vocab. empty = fetch from model checkpoint.",
     )
     parser.add_argument(
-        "--split", type=str, default="test", help="if running on MSCOCO images, which split to use: val|test|train"
+        "--split",
+        type=str,
+        default="test",
+        help="if running on MSCOCO images, which split to use: val|test|train",
     )
     parser.add_argument(
         "--coco_json",
@@ -395,7 +557,15 @@ def add_eval_options(parser):
         default="",
         help="an id identifying this run/job. used only if language_eval = 1 for appending to intermediate files",
     )
-    parser.add_argument("--verbose_beam", type=int, default=1, help="if we need to print out all beam search beams.")
     parser.add_argument(
-        "--verbose_loss", type=int, default=0, help="If calculate loss using ground truth during evaluation"
+        "--verbose_beam",
+        type=int,
+        default=1,
+        help="if we need to print out all beam search beams.",
+    )
+    parser.add_argument(
+        "--verbose_loss",
+        type=int,
+        default=0,
+        help="If calculate loss using ground truth during evaluation",
     )

@@ -102,7 +102,9 @@ def build_dict(imgs, wtoi, params):
             ref_idxs = []
             for sent in img["sentences"]:
                 if hasattr(params, "bpe"):
-                    sent["tokens"] = params.bpe.segment(" ".join(sent["tokens"])).strip().split(" ")
+                    sent["tokens"] = (
+                        params.bpe.segment(" ".join(sent["tokens"])).strip().split(" ")
+                    )
                 tmp_tokens = sent["tokens"] + ["<eos>"]
                 tmp_tokens = [_ if _ in wtoi else "UNK" for _ in tmp_tokens]
                 ref_words.append(" ".join(tmp_tokens))
@@ -141,10 +143,12 @@ def main(params):
     ngram_words, ngram_idxs, ref_len = build_dict(imgs, wtoi, params)
 
     utils.pickle_dump(
-        {"document_frequency": ngram_words, "ref_len": ref_len}, open(params["output_pkl"] + "-words.p", "wb")
+        {"document_frequency": ngram_words, "ref_len": ref_len},
+        open(params["output_pkl"] + "-words.p", "wb"),
     )
     utils.pickle_dump(
-        {"document_frequency": ngram_idxs, "ref_len": ref_len}, open(params["output_pkl"] + "-idxs.p", "wb")
+        {"document_frequency": ngram_idxs, "ref_len": ref_len},
+        open(params["output_pkl"] + "-idxs.p", "wb"),
     )
 
 
@@ -157,8 +161,12 @@ if __name__ == "__main__":
         default="/home-nfs/rluo/rluo/nips/code/prepro/dataset_coco.json",
         help="input json file to process into hdf5",
     )
-    parser.add_argument("--dict_json", default="data/cocotalk.json", help="output json file")
-    parser.add_argument("--output_pkl", default="data/coco-all", help="output pickle file")
+    parser.add_argument(
+        "--dict_json", default="data/cocotalk.json", help="output json file"
+    )
+    parser.add_argument(
+        "--output_pkl", default="data/coco-all", help="output pickle file"
+    )
     parser.add_argument("--split", default="all", help="test, val, train, all")
     args = parser.parse_args()
     params = vars(args)  # convert to ordinary dict

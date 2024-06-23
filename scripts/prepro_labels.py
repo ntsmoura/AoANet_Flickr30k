@@ -61,9 +61,15 @@ def build_vocab(imgs, params):
     bad_words = [w for w, n in counts.items() if n <= count_thr]
     vocab = [w for w, n in counts.items() if n > count_thr]
     bad_count = sum(counts[w] for w in bad_words)
-    print("number of bad words: %d/%d = %.2f%%" % (len(bad_words), len(counts), len(bad_words) * 100.0 / len(counts)))
+    print(
+        "number of bad words: %d/%d = %.2f%%"
+        % (len(bad_words), len(counts), len(bad_words) * 100.0 / len(counts))
+    )
     print("number of words in vocab would be %d" % (len(vocab),))
-    print("number of UNKs: %d/%d = %.2f%%" % (bad_count, total_words, bad_count * 100.0 / total_words))
+    print(
+        "number of UNKs: %d/%d = %.2f%%"
+        % (bad_count, total_words, bad_count * 100.0 / total_words)
+    )
 
     # lets look at the distribution of lengths as well
     sent_lengths = {}
@@ -77,7 +83,10 @@ def build_vocab(imgs, params):
     print("sentence length distribution (count, number of words):")
     sum_len = sum(sent_lengths.values())
     for i in range(max_len + 1):
-        print("%2d: %10d   %f%%" % (i, sent_lengths.get(i, 0), sent_lengths.get(i, 0) * 100.0 / sum_len))
+        print(
+            "%2d: %10d   %f%%"
+            % (i, sent_lengths.get(i, 0), sent_lengths.get(i, 0) * 100.0 / sum_len)
+        )
 
     # lets now produce the final annotations
     if bad_count > 0:
@@ -119,7 +128,9 @@ def encode_captions(imgs, params, wtoi):
 
         Li = np.zeros((n, max_length), dtype="uint32")
         for j, s in enumerate(img["final_captions"]):
-            label_length[caption_counter] = min(max_length, len(s))  # record the length of this sequence
+            label_length[caption_counter] = min(
+                max_length, len(s)
+            )  # record the length of this sequence
             caption_counter += 1
             for k, w in enumerate(s):
                 if k < max_length:
@@ -148,7 +159,9 @@ def main(params):
 
     # create the vocab
     vocab = build_vocab(imgs, params)
-    itow = {i + 1: w for i, w in enumerate(vocab)}  # a 1-indexed vocab translation table
+    itow = {
+        i + 1: w for i, w in enumerate(vocab)
+    }  # a 1-indexed vocab translation table
     wtoi = {w: i + 1 for i, w in enumerate(vocab)}  # inverse table
 
     # encode captions in large arrays, ready to ship to hdf5 file
@@ -171,14 +184,20 @@ def main(params):
         jimg = {}
         jimg["split"] = img["split"]
         if "filename" in img:
-            jimg["file_path"] = os.path.join(img.get("filepath", ""), img["filename"])  # copy it over, might need
+            jimg["file_path"] = os.path.join(
+                img.get("filepath", ""), img["filename"]
+            )  # copy it over, might need
         if "cocoid" in img:
-            jimg["id"] = img["cocoid"]  # copy over & mantain an id, if present (e.g. coco ids, useful)
+            jimg["id"] = img[
+                "cocoid"
+            ]  # copy over & mantain an id, if present (e.g. coco ids, useful)
         elif "imgid" in img:
             jimg["id"] = img["imgid"]
 
         if params["images_root"] != "":
-            with Image.open(os.path.join(params["images_root"], img["filepath"], img["filename"])) as _img:
+            with Image.open(
+                os.path.join(params["images_root"], img["filepath"], img["filename"])
+            ) as _img:
                 jimg["width"], jimg["height"] = _img.size
 
         out["images"].append(jimg)
@@ -191,7 +210,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # input json
-    parser.add_argument("--input_json", required=True, help="input json file to process into hdf5")
+    parser.add_argument(
+        "--input_json", required=True, help="input json file to process into hdf5"
+    )
     parser.add_argument("--output_json", default="data.json", help="output json file")
     parser.add_argument("--output_h5", default="data", help="output h5 file")
     parser.add_argument(

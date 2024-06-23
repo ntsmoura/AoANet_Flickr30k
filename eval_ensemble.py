@@ -21,8 +21,16 @@ import torch
 # Input arguments and options
 parser = argparse.ArgumentParser()
 # Input paths
-parser.add_argument("--ids", nargs="+", required=True, help="id of the models to ensemble")
-parser.add_argument("--weights", nargs="+", required=False, default=None, help="id of the models to ensemble")
+parser.add_argument(
+    "--ids", nargs="+", required=True, help="id of the models to ensemble"
+)
+parser.add_argument(
+    "--weights",
+    nargs="+",
+    required=False,
+    default=None,
+    help="id of the models to ensemble",
+)
 # parser.add_argument('--models', nargs='+', required=True
 #                 help='path to model to evaluate')
 # parser.add_argument('--infos_paths', nargs='+', required=True, help='path to infos to evaluate')
@@ -38,14 +46,24 @@ for id in opt.ids:
         app = "-" + app
     else:
         app = ""
-    model_infos.append(utils.pickle_load(open("log_%s/infos_%s%s.pkl" % (id, id, app), "rb")))
+    model_infos.append(
+        utils.pickle_load(open("log_%s/infos_%s%s.pkl" % (id, id, app), "rb"))
+    )
     model_paths.append("log_%s/model%s.pth" % (id, app))
 
 # Load one infos
 infos = model_infos[0]
 
 # override and collect parameters
-replace = ["input_fc_dir", "input_att_dir", "input_box_dir", "input_label_h5", "input_json", "batch_size", "id"]
+replace = [
+    "input_fc_dir",
+    "input_att_dir",
+    "input_box_dir",
+    "input_label_h5",
+    "input_json",
+    "batch_size",
+    "id",
+]
 for k in replace:
     setattr(opt, k, getattr(opt, k) or getattr(infos["opt"], k, ""))
 
@@ -101,7 +119,9 @@ loader.ix_to_word = infos["vocab"]
 
 opt.id = "+".join([_ + str(__) for _, __ in zip(opt.ids, opt.weights)])
 # Set sample options
-loss, split_predictions, lang_stats = eval_utils.eval_split(model, crit, loader, vars(opt))
+loss, split_predictions, lang_stats = eval_utils.eval_split(
+    model, crit, loader, vars(opt)
+)
 
 print("loss: ", loss)
 if lang_stats:

@@ -62,7 +62,9 @@ def train(opt):
                 )
 
         if os.path.isfile(os.path.join(opt.start_from, "histories_" + opt.id + ".pkl")):
-            with open(os.path.join(opt.start_from, "histories_" + opt.id + ".pkl"), "rb") as f:
+            with open(
+                os.path.join(opt.start_from, "histories_" + opt.id + ".pkl"), "rb"
+            ) as f:
                 histories = utils.pickle_load(f)
     else:
         infos["iter"] = 0
@@ -97,8 +99,13 @@ def train(opt):
     dp_lw_model.train()
 
     if opt.noamopt:
-        assert opt.caption_model in ["transformer", "aoa"], "noamopt can only work with transformer"
-        optimizer = utils.get_std_opt(model, factor=opt.noamopt_factor, warmup=opt.noamopt_warmup)
+        assert opt.caption_model in [
+            "transformer",
+            "aoa",
+        ], "noamopt can only work with transformer"
+        optimizer = utils.get_std_opt(
+            model, factor=opt.noamopt_factor, warmup=opt.noamopt_warmup
+        )
         optimizer._step = iteration
     elif opt.reduce_on_plateau:
         optimizer = utils.build_optimizer(model.parameters(), opt)
@@ -106,8 +113,12 @@ def train(opt):
     else:
         optimizer = utils.build_optimizer(model.parameters(), opt)
     # Load the optimizer
-    if vars(opt).get("start_from", None) is not None and os.path.isfile(os.path.join(opt.start_from, "optimizer.pth")):
-        optimizer.load_state_dict(torch.load(os.path.join(opt.start_from, "optimizer.pth")))
+    if vars(opt).get("start_from", None) is not None and os.path.isfile(
+        os.path.join(opt.start_from, "optimizer.pth")
+    ):
+        optimizer.load_state_dict(
+            torch.load(os.path.join(opt.start_from, "optimizer.pth"))
+        )
 
     def save_checkpoint(model, infos, optimizer, histories=None, append=""):
         if len(append) > 0:
@@ -120,10 +131,18 @@ def train(opt):
         print("model saved to {}".format(checkpoint_path))
         optimizer_path = os.path.join(opt.checkpoint_path, "optimizer%s.pth" % (append))
         torch.save(optimizer.state_dict(), optimizer_path)
-        with open(os.path.join(opt.checkpoint_path, "infos_" + opt.id + "%s.pkl" % (append)), "wb") as f:
+        with open(
+            os.path.join(opt.checkpoint_path, "infos_" + opt.id + "%s.pkl" % (append)),
+            "wb",
+        ) as f:
             utils.pickle_dump(infos, f)
         if histories:
-            with open(os.path.join(opt.checkpoint_path, "histories_" + opt.id + "%s.pkl" % (append)), "wb") as f:
+            with open(
+                os.path.join(
+                    opt.checkpoint_path, "histories_" + opt.id + "%s.pkl" % (append)
+                ),
+                "wb",
+            ) as f:
                 utils.pickle_dump(histories, f)
 
     try:
@@ -131,17 +150,30 @@ def train(opt):
             if epoch_done:
                 if not opt.noamopt and not opt.reduce_on_plateau:
                     # Assign the learning rate
-                    if epoch > opt.learning_rate_decay_start and opt.learning_rate_decay_start >= 0:
-                        frac = (epoch - opt.learning_rate_decay_start) // opt.learning_rate_decay_every
+                    if (
+                        epoch > opt.learning_rate_decay_start
+                        and opt.learning_rate_decay_start >= 0
+                    ):
+                        frac = (
+                            epoch - opt.learning_rate_decay_start
+                        ) // opt.learning_rate_decay_every
                         decay_factor = opt.learning_rate_decay_rate**frac
                         opt.current_lr = opt.learning_rate * decay_factor
                     else:
                         opt.current_lr = opt.learning_rate
                     utils.set_lr(optimizer, opt.current_lr)  # set the decayed rate
                 # Assign the scheduled sampling prob
-                if epoch > opt.scheduled_sampling_start and opt.scheduled_sampling_start >= 0:
-                    frac = (epoch - opt.scheduled_sampling_start) // opt.scheduled_sampling_increase_every
-                    opt.ss_prob = min(opt.scheduled_sampling_increase_prob * frac, opt.scheduled_sampling_max_prob)
+                if (
+                    epoch > opt.scheduled_sampling_start
+                    and opt.scheduled_sampling_start >= 0
+                ):
+                    frac = (
+                        epoch - opt.scheduled_sampling_start
+                    ) // opt.scheduled_sampling_increase_every
+                    opt.ss_prob = min(
+                        opt.scheduled_sampling_increase_prob * frac,
+                        opt.scheduled_sampling_max_prob,
+                    )
                     model.ss_prob = opt.ss_prob
 
                 # If start self critical training
@@ -155,7 +187,9 @@ def train(opt):
 
             start = time.time()
             if (opt.use_warmup == 1) and (iteration < opt.noamopt_warmup):
-                opt.current_lr = opt.learning_rate * (iteration + 1) / opt.noamopt_warmup
+                opt.current_lr = (
+                    opt.learning_rate * (iteration + 1) / opt.noamopt_warmup
+                )
                 utils.set_lr(optimizer, opt.current_lr)
             # Load data from train split (0)
             data = loader.get_batch("train")
@@ -166,12 +200,25 @@ def train(opt):
 
             torch.cuda.synchronize()
             start = time.time()
-            tmp = [data["fc_feats"], data["att_feats"], data["labels"], data["masks"], data["att_masks"]]
+            tmp = [
+                data["fc_feats"],
+                data["att_feats"],
+                data["labels"],
+                data["masks"],
+                data["att_masks"],
+            ]
             tmp = [_ if _ is None else _.cuda() for _ in tmp]
             fc_feats, att_feats, labels, masks, att_masks = tmp
 
             model_out = dp_lw_model(
-                fc_feats, att_feats, labels, masks, att_masks, data["gts"], torch.arange(0, len(data["gts"])), sc_flag
+                fc_feats,
+                att_feats,
+                labels,
+                masks,
+                att_masks,
+                data["gts"],
+                torch.arange(0, len(data["gts"])),
+                sc_flag,
             )
 
             loss = model_out["loss"].mean()
@@ -205,17 +252,33 @@ def train(opt):
 
             # Write the training loss summary
             if iteration % opt.losses_log_every == 0:
-                add_summary_value(tb_summary_writer, "train_loss", train_loss, iteration)
+                add_summary_value(
+                    tb_summary_writer, "train_loss", train_loss, iteration
+                )
                 if opt.noamopt:
                     opt.current_lr = optimizer.rate()
                 elif opt.reduce_on_plateau:
                     opt.current_lr = optimizer.current_lr
-                add_summary_value(tb_summary_writer, "learning_rate", opt.current_lr, iteration)
-                add_summary_value(tb_summary_writer, "scheduled_sampling_prob", model.ss_prob, iteration)
+                add_summary_value(
+                    tb_summary_writer, "learning_rate", opt.current_lr, iteration
+                )
+                add_summary_value(
+                    tb_summary_writer,
+                    "scheduled_sampling_prob",
+                    model.ss_prob,
+                    iteration,
+                )
                 if sc_flag:
-                    add_summary_value(tb_summary_writer, "avg_reward", model_out["reward"].mean(), iteration)
+                    add_summary_value(
+                        tb_summary_writer,
+                        "avg_reward",
+                        model_out["reward"].mean(),
+                        iteration,
+                    )
 
-                loss_history[iteration] = train_loss if not sc_flag else model_out["reward"].mean()
+                loss_history[iteration] = (
+                    train_loss if not sc_flag else model_out["reward"].mean()
+                )
                 lr_history[iteration] = opt.current_lr
                 ss_prob_history[iteration] = model.ss_prob
 
@@ -230,7 +293,9 @@ def train(opt):
                 # eval model
                 eval_kwargs = {"split": "val", "dataset": opt.input_json}
                 eval_kwargs.update(vars(opt))
-                val_loss, predictions, lang_stats = eval_utils.eval_split(dp_model, lw_model.crit, loader, eval_kwargs)
+                val_loss, predictions, lang_stats = eval_utils.eval_split(
+                    dp_model, lw_model.crit, loader, eval_kwargs
+                )
 
                 if opt.reduce_on_plateau:
                     if "CIDEr" in lang_stats:
@@ -238,11 +303,17 @@ def train(opt):
                     else:
                         optimizer.scheduler_step(val_loss)
                 # Write validation result into summary
-                add_summary_value(tb_summary_writer, "validation loss", val_loss, iteration)
+                add_summary_value(
+                    tb_summary_writer, "validation loss", val_loss, iteration
+                )
                 if lang_stats is not None:
                     for k, v in lang_stats.items():
                         add_summary_value(tb_summary_writer, k, v, iteration)
-                val_result_history[iteration] = {"loss": val_loss, "lang_stats": lang_stats, "predictions": predictions}
+                val_result_history[iteration] = {
+                    "loss": val_loss,
+                    "lang_stats": lang_stats,
+                    "predictions": predictions,
+                }
 
                 # Save model if is improving on validation result
                 if opt.language_eval == 1:

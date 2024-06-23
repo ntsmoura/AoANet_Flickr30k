@@ -64,7 +64,11 @@ def build_vocab(imgs, params):
     codecs_output = tempfile.NamedTemporaryFile(delete=False)
     codecs_output.close()
     with codecs.open(codecs_output.name, "w", encoding="UTF-8") as output:
-        learn_bpe.learn_bpe(codecs.open(all_captions.name, encoding="UTF-8"), output, params["symbol_count"])
+        learn_bpe.learn_bpe(
+            codecs.open(all_captions.name, encoding="UTF-8"),
+            output,
+            params["symbol_count"],
+        )
 
     with codecs.open(codecs_output.name, encoding="UTF-8") as codes:
         bpe = apply_bpe.BPE(codes)
@@ -130,7 +134,9 @@ def encode_captions(imgs, params, wtoi):
 
         Li = np.zeros((n, max_length), dtype="uint32")
         for j, s in enumerate(img["final_captions"]):
-            label_length[caption_counter] = min(max_length, len(s))  # record the length of this sequence
+            label_length[caption_counter] = min(
+                max_length, len(s)
+            )  # record the length of this sequence
             caption_counter += 1
             for k, w in enumerate(s):
                 if k < max_length:
@@ -159,7 +165,9 @@ def main(params):
 
     # create the vocab
     vocab, bpe = build_vocab(imgs, params)
-    itow = {i + 1: w for i, w in enumerate(vocab)}  # a 1-indexed vocab translation table
+    itow = {
+        i + 1: w for i, w in enumerate(vocab)
+    }  # a 1-indexed vocab translation table
     wtoi = {w: i + 1 for i, w in enumerate(vocab)}  # inverse table
 
     # encode captions in large arrays, ready to ship to hdf5 file
@@ -183,12 +191,18 @@ def main(params):
         jimg = {}
         jimg["split"] = img["split"]
         if "filename" in img:
-            jimg["file_path"] = os.path.join(img["filepath"], img["filename"])  # copy it over, might need
+            jimg["file_path"] = os.path.join(
+                img["filepath"], img["filename"]
+            )  # copy it over, might need
         if "cocoid" in img:
-            jimg["id"] = img["cocoid"]  # copy over & mantain an id, if present (e.g. coco ids, useful)
+            jimg["id"] = img[
+                "cocoid"
+            ]  # copy over & mantain an id, if present (e.g. coco ids, useful)
 
         if params["images_root"] != "":
-            with Image.open(os.path.join(params["images_root"], img["filepath"], img["filename"])) as _img:
+            with Image.open(
+                os.path.join(params["images_root"], img["filepath"], img["filename"])
+            ) as _img:
                 jimg["width"], jimg["height"] = _img.size
 
         out["images"].append(jimg)
@@ -201,7 +215,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # input json
-    parser.add_argument("--input_json", required=True, help="input json file to process into hdf5")
+    parser.add_argument(
+        "--input_json", required=True, help="input json file to process into hdf5"
+    )
     parser.add_argument("--output_json", default="data.json", help="output json file")
     parser.add_argument("--output_h5", default="data", help="output h5 file")
     parser.add_argument(

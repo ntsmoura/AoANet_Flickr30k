@@ -37,7 +37,9 @@ class DataLoaderRaw:
         # Load resnet
         self.cnn_model = opt.get("cnn_model", "resnet101")
         self.my_resnet = getattr(misc.resnet, self.cnn_model)()
-        self.my_resnet.load_state_dict(torch.load("./data/imagenet_weights/" + self.cnn_model + ".pth"))
+        self.my_resnet.load_state_dict(
+            torch.load("./data/imagenet_weights/" + self.cnn_model + ".pth")
+        )
         self.my_resnet = myResnet(self.my_resnet)
         self.my_resnet.cuda()
         self.my_resnet.eval()
@@ -62,7 +64,16 @@ class DataLoaderRaw:
             print("listing all images in directory " + self.folder_path)
 
             def isImage(f):
-                supportedExt = [".jpg", ".JPG", ".jpeg", ".JPEG", ".png", ".PNG", ".ppm", ".PPM"]
+                supportedExt = [
+                    ".jpg",
+                    ".JPG",
+                    ".jpeg",
+                    ".JPEG",
+                    ".png",
+                    ".PNG",
+                    ".ppm",
+                    ".PPM",
+                ]
                 for ext in supportedExt:
                     start_idx = f.rfind(ext)
                     if start_idx >= 0 and start_idx + len(ext) == len(f):
@@ -126,7 +137,11 @@ class DataLoaderRaw:
         data["fc_feats"] = fc_batch
         data["att_feats"] = att_batch.reshape(batch_size, -1, 2048)
         data["att_masks"] = None
-        data["bounds"] = {"it_pos_now": self.iterator, "it_max": self.N, "wrapped": wrapped}
+        data["bounds"] = {
+            "it_pos_now": self.iterator,
+            "it_max": self.N,
+            "wrapped": wrapped,
+        }
         data["infos"] = infos
 
         return data

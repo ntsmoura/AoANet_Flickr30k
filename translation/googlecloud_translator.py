@@ -14,7 +14,7 @@ import httpx
 from tqdm import tqdm
 
 
-class LibreTranslate(BaseTranslator):
+class GoogleCloudTranslate(BaseTranslator):
     def __init__(
         self,
         checkpoint_path: Path,
@@ -22,11 +22,11 @@ class LibreTranslate(BaseTranslator):
         source_json: Path = Path(__file__).parent.parent
         / "data"
         / "flickr30k_dataset.json",
-        source_language: str = "en",
-        dest_language: str = "pt",
+        source_language: str = "en-US",
+        dest_language: str = "pt-BR",
     ):
         """
-        LibreTranslate Translator
+        GoogleCloud Translator
 
         :param source_json: The path to source flickr dataset json.
         :param checkpoint_path: Where the translator sould save the checkpoint json.
@@ -35,7 +35,7 @@ class LibreTranslate(BaseTranslator):
         :param dest_language: The destination language of translation.
         """
         super().__init__(
-            translator_identifier="libretranslate",
+            translator_identifier="googlecloud",
             checkpoint_path=checkpoint_path,
             output_path=output_path,
             source_json=source_json,
@@ -111,11 +111,11 @@ async def main():
     os.makedirs(checkpoint_path, exist_ok=True)
     os.makedirs(data_path, exist_ok=True)
 
-    libre_translator = LibreTranslate(
+    googlecloud_translator = GoogleCloudTranslate(
         checkpoint_path=checkpoint_path, output_path=data_path
     )
 
-    await libre_translator.translate_sentences()
+    await googlecloud_translator.translate_sentences()
 
 
 if __name__ == "__main__":

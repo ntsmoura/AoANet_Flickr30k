@@ -12,7 +12,21 @@ import os
 import six
 from six.moves import cPickle
 
-bad_endings = ["with", "in", "on", "of", "a", "at", "to", "for", "an", "this", "his", "her", "that"]
+bad_endings = [
+    "with",
+    "in",
+    "on",
+    "of",
+    "a",
+    "at",
+    "to",
+    "for",
+    "an",
+    "this",
+    "his",
+    "her",
+    "that",
+]
 bad_endings += ["the"]
 
 
@@ -95,7 +109,9 @@ class RewardCriterion(nn.Module):
         input = to_contiguous(input).view(-1)
         reward = to_contiguous(reward).view(-1)
         mask = (seq > 0).float()
-        mask = to_contiguous(torch.cat([mask.new(mask.size(0), 1).fill_(1), mask[:, :-1]], 1)).view(-1)
+        mask = to_contiguous(
+            torch.cat([mask.new(mask.size(0), 1).fill_(1), mask[:, :-1]], 1)
+        ).view(-1)
         output = -input * reward * mask
         output = torch.sum(output) / torch.sum(mask)
 
@@ -170,16 +186,28 @@ def clip_gradient(optimizer, grad_clip):
 def build_optimizer(params, opt):
     if opt.optim == "rmsprop":
         return optim.RMSprop(
-            params, opt.learning_rate, opt.optim_alpha, opt.optim_epsilon, weight_decay=opt.weight_decay
+            params,
+            opt.learning_rate,
+            opt.optim_alpha,
+            opt.optim_epsilon,
+            weight_decay=opt.weight_decay,
         )
     elif opt.optim == "adagrad":
         return optim.Adagrad(params, opt.learning_rate, weight_decay=opt.weight_decay)
     elif opt.optim == "sgd":
         return optim.SGD(params, opt.learning_rate, weight_decay=opt.weight_decay)
     elif opt.optim == "sgdm":
-        return optim.SGD(params, opt.learning_rate, opt.optim_alpha, weight_decay=opt.weight_decay)
+        return optim.SGD(
+            params, opt.learning_rate, opt.optim_alpha, weight_decay=opt.weight_decay
+        )
     elif opt.optim == "sgdmom":
-        return optim.SGD(params, opt.learning_rate, opt.optim_alpha, weight_decay=opt.weight_decay, nesterov=True)
+        return optim.SGD(
+            params,
+            opt.learning_rate,
+            opt.optim_alpha,
+            weight_decay=opt.weight_decay,
+            nesterov=True,
+        )
     elif opt.optim == "adam":
         return optim.Adam(
             params,
@@ -244,7 +272,10 @@ class NoamOpt(object):
         "Implement `lrate` above"
         if step is None:
             step = self._step
-        return self.factor * (self.model_size ** (-0.5) * min(step ** (-0.5), step * self.warmup ** (-1.5)))
+        return self.factor * (
+            self.model_size ** (-0.5)
+            * min(step ** (-0.5), step * self.warmup ** (-1.5))
+        )
 
     def __getattr__(self, name):
         return getattr(self.optimizer, name)
@@ -267,7 +298,16 @@ class ReduceLROnPlateau(object):
         eps=1e-08,
     ):
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode, factor, patience, verbose, threshold, threshold_mode, cooldown, min_lr, eps
+            optimizer,
+            mode,
+            factor,
+            patience,
+            verbose,
+            threshold,
+            threshold_mode,
+            cooldown,
+            min_lr,
+            eps,
         )
         self.optimizer = optimizer
         self.current_lr = get_lr(optimizer)
@@ -303,7 +343,10 @@ class ReduceLROnPlateau(object):
         "Implement `lrate` above"
         if step is None:
             step = self._step
-        return self.factor * (self.model_size ** (-0.5) * min(step ** (-0.5), step * self.warmup ** (-1.5)))
+        return self.factor * (
+            self.model_size ** (-0.5)
+            * min(step ** (-0.5), step * self.warmup ** (-1.5))
+        )
 
     def __getattr__(self, name):
         return getattr(self.optimizer, name)

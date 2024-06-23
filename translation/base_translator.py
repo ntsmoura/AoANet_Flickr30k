@@ -11,7 +11,9 @@ class BaseTranslator:
         translator_identifier: str,
         checkpoint_path: Path,
         output_path: Path,
-        source_json: Path = Path(__file__).parent.parent / "data" / "flickr30k_dataset.json",
+        source_json: Path = Path(__file__).parent.parent
+        / "data"
+        / "flickr30k_dataset.json",
         source_language: str = "en",
         dest_language: str = "pt",
     ):
@@ -54,7 +56,11 @@ class BaseTranslator:
 
         :param checkpoint_data: Data to be saved in checkpoint dictionary.
         """
-        with open(self.checkpoint_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k_checkpoint.json", "w+") as file:
+        with open(
+            self.checkpoint_path
+            / f"{self.translator_identifier}_{self.dest_language}_flicker30k_checkpoint.json",
+            "w+",
+        ) as file:
             self._checkpoint_dictionary.update(checkpoint_data)
             dumped_json = json.dumps(self._checkpoint_dictionary)
             file.write(dumped_json)
@@ -65,7 +71,8 @@ class BaseTranslator:
         """
         try:
             with open(
-                self.checkpoint_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k_checkpoint.json",
+                self.checkpoint_path
+                / f"{self.translator_identifier}_{self.dest_language}_flicker30k_checkpoint.json",
                 "r",
             ) as file:
                 self._checkpoint_dictionary = json.loads(file.read())
@@ -78,7 +85,9 @@ class BaseTranslator:
         """
         raise NotImplementedError
 
-    async def append_translated_sentences_to_output(self, translation_dict: dict, checkpoint_data: dict):
+    async def append_translated_sentences_to_output(
+        self, translation_dict: dict, checkpoint_data: dict
+    ):
         """
         Appends translated sentences information to output json.
         Saves checkpoint data.
@@ -87,9 +96,10 @@ class BaseTranslator:
         old_checkpoint = copy(self._checkpoint_dictionary)
         try:
             async with self.output_lock:
-
                 with open(
-                    self.output_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json", "r+"
+                    self.output_path
+                    / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json",
+                    "r+",
                 ) as file:
                     self._flickr_dest_json["images"].append(translation_dict)
                     dumped_json = json.dumps(self._flickr_dest_json)
@@ -98,20 +108,31 @@ class BaseTranslator:
                 self.save_checkpoint(checkpoint_data)
         except Exception:
             with open(
-                self.output_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json", "r+"
+                self.output_path
+                / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json",
+                "r+",
             ) as file:
                 dumped_json = json.dumps(old_flickr_dest_json)
                 file.write(dumped_json)
-            with open(self.checkpoint_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k_checkpoint.json", "w+") as file:
+            with open(
+                self.checkpoint_path
+                / f"{self.translator_identifier}_{self.dest_language}_flicker30k_checkpoint.json",
+                "w+",
+            ) as file:
                 dumped_json = json.dumps(old_checkpoint)
                 file.write(dumped_json)
 
     def create_or_load_ouput_json(self):
         """Creates base output json or loads an existing one"""
         base_json = {"images": [], "dataset": "flickr30k"}
-        if not os.path.exists(self.output_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json"):
+        if not os.path.exists(
+            self.output_path
+            / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json"
+        ):
             with open(
-                self.output_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json", "w+"
+                self.output_path
+                / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json",
+                "w+",
             ) as file:
                 json_string = json.dumps(base_json)
                 file.write(json_string)
@@ -119,6 +140,8 @@ class BaseTranslator:
             self._flickr_dest_json = base_json
         else:
             with open(
-                self.output_path / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json", "r"
+                self.output_path
+                / f"{self.translator_identifier}_{self.dest_language}_flicker30k.json",
+                "r",
             ) as file:
                 self._flickr_dest_json = json.loads(file.read())

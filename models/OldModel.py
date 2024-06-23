@@ -33,7 +33,9 @@ class OldModel(CaptionModel):
 
         self.ss_prob = 0.0  # Schedule sampling probability
 
-        self.linear = nn.Linear(self.fc_feat_size, self.num_layers * self.rnn_size)  # feature to rnn_size
+        self.linear = nn.Linear(
+            self.fc_feat_size, self.num_layers * self.rnn_size
+        )  # feature to rnn_size
         self.embed = nn.Embedding(self.vocab_size + 1, self.input_encoding_size)
         self.logit = nn.Linear(self.rnn_size, self.vocab_size + 1)
         self.dropout = nn.Dropout(self.drop_prob_lm)
@@ -47,7 +49,11 @@ class OldModel(CaptionModel):
         self.logit.weight.data.uniform_(-initrange, initrange)
 
     def init_hidden(self, fc_feats):
-        image_map = self.linear(fc_feats).view(-1, self.num_layers, self.rnn_size).transpose(0, 1)
+        image_map = (
+            self.linear(fc_feats)
+            .view(-1, self.num_layers, self.rnn_size)
+            .transpose(0, 1)
+        )
         if self.rnn_type == "lstm":
             return (image_map, image_map)
         else:
@@ -60,7 +66,9 @@ class OldModel(CaptionModel):
         outputs = []
 
         for i in range(seq.size(1) - 1):
-            if self.training and i >= 1 and self.ss_prob > 0.0:  # otherwiste no need to sample
+            if (
+                self.training and i >= 1 and self.ss_prob > 0.0
+            ):  # otherwiste no need to sample
                 sample_prob = fc_feats.data.new(batch_size).uniform_(0, 1)
                 sample_mask = sample_prob < self.ss_prob
                 if sample_mask.sum() == 0:
@@ -70,8 +78,16 @@ class OldModel(CaptionModel):
                     it = seq[:, i].data.clone()
                     # prob_prev = torch.exp(outputs[-1].data.index_select(0, sample_ind)) # fetch prev distribution: shape Nx(M+1)
                     # it.index_copy_(0, sample_ind, torch.multinomial(prob_prev, 1).view(-1))
-                    prob_prev = torch.exp(outputs[-1].data)  # fetch prev distribution: shape Nx(M+1)
-                    it.index_copy_(0, sample_ind, torch.multinomial(prob_prev, 1).view(-1).index_select(0, sample_ind))
+                    prob_prev = torch.exp(
+                        outputs[-1].data
+                    )  # fetch prev distribution: shape Nx(M+1)
+                    it.index_copy_(
+                        0,
+                        sample_ind,
+                        torch.multinomial(prob_prev, 1)
+                        .view(-1)
+                        .index_select(0, sample_ind),
+                    )
             else:
                 it = seq[:, i].clone()
             # break if all the sequences end
@@ -110,13 +126,19 @@ class OldModel(CaptionModel):
         self.done_beams = [[] for _ in range(batch_size)]
         for k in range(batch_size):
             tmp_fc_feats = fc_feats[k : k + 1].expand(beam_size, self.fc_feat_size)
-            tmp_att_feats = att_feats[k : k + 1].expand(*((beam_size,) + att_feats.size()[1:])).contiguous()
+            tmp_att_feats = (
+                att_feats[k : k + 1]
+                .expand(*((beam_size,) + att_feats.size()[1:]))
+                .contiguous()
+            )
 
             state = self.init_hidden(tmp_fc_feats)
 
             beam_seq = torch.LongTensor(self.seq_length, beam_size).zero_()
             beam_seq_logprobs = torch.FloatTensor(self.seq_length, beam_size).zero_()
-            beam_logprobs_sum = torch.zeros(beam_size)  # running sum of logprobs for each beam
+            beam_logprobs_sum = torch.zeros(
+                beam_size
+            )  # running sum of logprobs for each beam
             done_beams = []
             for t in range(1):
                 if t == 0:  # input <bos>
@@ -126,8 +148,12 @@ class OldModel(CaptionModel):
                 output, state = self.core(xt, tmp_fc_feats, tmp_att_feats, state)
                 logprobs = F.log_softmax(self.logit(self.dropout(output)), dim=1)
 
-            self.done_beams[k] = self.beam_search(state, logprobs, tmp_fc_feats, tmp_att_feats, opt=opt)
-            seq[:, k] = self.done_beams[k][0]["seq"]  # the first beam has highest cumulative score
+            self.done_beams[k] = self.beam_search(
+                state, logprobs, tmp_fc_feats, tmp_att_feats, opt=opt
+            )
+            seq[:, k] = self.done_beams[k][0][
+                "seq"
+            ]  # the first beam has highest cumulative score
             seqLogprobs[:, k] = self.done_beams[k][0]["logps"]
         # return the samples and their log likelihoods
         return seq.transpose(0, 1), seqLogprobs.transpose(0, 1)
@@ -152,12 +178,16 @@ class OldModel(CaptionModel):
                 it = it.view(-1).long()
             else:
                 if temperature == 1.0:
-                    prob_prev = torch.exp(logprobs.data).cpu()  # fetch prev distribution: shape Nx(M+1)
+                    prob_prev = torch.exp(
+                        logprobs.data
+                    ).cpu()  # fetch prev distribution: shape Nx(M+1)
                 else:
                     # scale logprobs by temperature
                     prob_prev = torch.exp(torch.div(logprobs.data, temperature)).cpu()
                 it = torch.multinomial(prob_prev, 1).cuda()
-                sampleLogprobs = logprobs.gather(1, it)  # gather the logprobs at sampled positions
+                sampleLogprobs = logprobs.gather(
+                    1, it
+                )  # gather the logprobs at sampled positions
                 it = it.view(-1).long()  # and flatten indices for downstream processing
 
             xt = self.embed(it)
@@ -177,7 +207,9 @@ class OldModel(CaptionModel):
             output, state = self.core(xt, fc_feats, att_feats, state)
             logprobs = F.log_softmax(self.logit(self.dropout(output)), dim=1)
 
-        return torch.cat([_.unsqueeze(1) for _ in seq], 1), torch.cat([_.unsqueeze(1) for _ in seqLogprobs], 1)
+        return torch.cat([_.unsqueeze(1) for _ in seq], 1), torch.cat(
+            [_.unsqueeze(1) for _ in seqLogprobs], 1
+        )
 
 
 class ShowAttendTellCore(nn.Module):
@@ -213,7 +245,9 @@ class ShowAttendTellCore(nn.Module):
         att = att_feats.view(-1, self.att_feat_size)
         if self.att_hid_size > 0:
             att = self.ctx2att(att)  # (batch * att_size) * att_hid_size
-            att = att.view(-1, att_size, self.att_hid_size)  # batch * att_size * att_hid_size
+            att = att.view(
+                -1, att_size, self.att_hid_size
+            )  # batch * att_size * att_hid_size
             att_h = self.h2att(state[0][-1])  # batch * att_hid_size
             att_h = att_h.unsqueeze(1).expand_as(att)  # batch * att_size * att_hid_size
             dot = att + att_h  # batch * att_size * att_hid_size
@@ -229,8 +263,12 @@ class ShowAttendTellCore(nn.Module):
             dot = att_h + att  # batch * att_size
 
         weight = F.softmax(dot, dim=1)
-        att_feats_ = att_feats.view(-1, att_size, self.att_feat_size)  # batch * att_size * att_feat_size
-        att_res = torch.bmm(weight.unsqueeze(1), att_feats_).squeeze(1)  # batch * att_feat_size
+        att_feats_ = att_feats.view(
+            -1, att_size, self.att_feat_size
+        )  # batch * att_size * att_feat_size
+        att_res = torch.bmm(weight.unsqueeze(1), att_feats_).squeeze(
+            1
+        )  # batch * att_feat_size
 
         output, state = self.rnn(torch.cat([xt, att_res], 1).unsqueeze(0), state)
         return output.squeeze(0), state

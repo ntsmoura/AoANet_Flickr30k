@@ -73,15 +73,31 @@ def main(params):
                 "id": 3,
                 "name": "Attribution-NonCommercial-NoDerivs License",
             },
-            {"url": "http://creativecommons.org/licenses/by/2.0/", "id": 4, "name": "Attribution License"},
+            {
+                "url": "http://creativecommons.org/licenses/by/2.0/",
+                "id": 4,
+                "name": "Attribution License",
+            },
             {
                 "url": "http://creativecommons.org/licenses/by-sa/2.0/",
                 "id": 5,
                 "name": "Attribution-ShareAlike License",
             },
-            {"url": "http://creativecommons.org/licenses/by-nd/2.0/", "id": 6, "name": "Attribution-NoDerivs License"},
-            {"url": "http://flickr.com/commons/usage/", "id": 7, "name": "No known copyright restrictions"},
-            {"url": "http://www.usa.gov/copyright.shtml", "id": 8, "name": "United States Government Work"},
+            {
+                "url": "http://creativecommons.org/licenses/by-nd/2.0/",
+                "id": 6,
+                "name": "Attribution-NoDerivs License",
+            },
+            {
+                "url": "http://flickr.com/commons/usage/",
+                "id": 7,
+                "name": "No known copyright restrictions",
+            },
+            {
+                "url": "http://www.usa.gov/copyright.shtml",
+                "id": 8,
+                "name": "United States Government Work",
+            },
         ],
         "type": "captions",
     }
@@ -97,7 +113,9 @@ def main(params):
             if len(s) == 0:
                 continue
             s = " ".join(s["tokens"])
-            out["annotations"].append({"image_id": out["images"][-1]["id"], "caption": s, "id": cnt})
+            out["annotations"].append(
+                {"image_id": out["images"][-1]["id"], "caption": s, "id": cnt}
+            )
             cnt += 1
 
     json.dump(out, open(params["output_json"], "w"))
@@ -108,7 +126,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # input json
-    parser.add_argument("--input_json", nargs="+", required=True, help="input json file to process into hdf5")
+    parser.add_argument(
+        "--input_json",
+        nargs="+",
+        required=True,
+        help="input json file to process into hdf5",
+    )
     parser.add_argument("--output_json", default="data.json", help="output json file")
 
     args = parser.parse_args()
