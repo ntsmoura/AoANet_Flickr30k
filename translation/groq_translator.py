@@ -53,8 +53,8 @@ class GroqTranslate(BaseTranslator):
 
         self.base_prompt = (
             "TRANSLATE THE FOLLOWING SENTENCES FROM EN-US TO PT-BR:\n\nREPLACE_THIS_WITH_SENTENCES"
-            "\n\naAND RETURN THEM INTO THE SAME JSON STRUCTURE REPLACING THE ORIGINAL SENTENCE FOR"
-            " THE TRANSLATED ONE.\nSTRICT RULES:\n"
+            "\n\nAND RETURN THEM INTO THE SAME JSON STRUCTURE REPLACING THE ORIGINAL SENTENCE FOR "
+            "THE TRANSLATED ONE.\nSTRICT RULES:\n"
             "DO NOT ANSWER ANYTHING BESIDES THE JSON\nRETURN A VALID JSON THAT CAN BE"
             " PARSED BY PYTHON json.loads FUNCTION\nDO NOT MODIFY THE JSON STRUCTURE.\n"
             'DO NOT USE \\" TO REPRESENT QUOTES OF JSON DELIMITERS.'
@@ -122,17 +122,31 @@ class GroqTranslate(BaseTranslator):
                 await asyncio.sleep(65)
 
     @staticmethod
-    def assert_valid_answer(answer):
+    def write_wrong_answer_to_disk(llm_original_anwser):
+        with open("llm_invalid_answers.txt", "a") as error_file:
+            error_file.write(llm_original_anwser + "\n")
+
+    def assert_valid_answer(self, answer):
         found_error = False
 
         original_answer = copy(answer)
 
         if answer[-1] != "}":
-            answer = answer[:-1] + "}"
+            if "}" not in answer:
+                answer = answer[:-1] + "}"
+            else:
+                char_position = answer.find("}")
+                if char_position != -1:
+                    answer = answer[:char_position+1]
             found_error = True
 
         if answer[0] != "{":
-            answer = "{" + answer[1:]
+            if "{" not in answer:
+                answer = "{" + answer[1:]
+            else:
+                char_position = answer.find("{")
+                if char_position != -1:
+                    answer = answer[char_position:]
             found_error = True
 
         if len(answer) < 100:
@@ -151,8 +165,7 @@ class GroqTranslate(BaseTranslator):
             answer = answer.replace(match_text, match_text.strip(","))
 
         if found_error:
-            with open("llm_invalid_answers.txt", "r+") as error_file:
-                error_file.write(original_answer + "\n")
+            self.write_wrong_answer_to_disk(original_answer)
 
         return answer
 
@@ -160,6 +173,11 @@ class GroqTranslate(BaseTranslator):
         """
         Send sentences to groq llm api and returns translated sentences
         """
+
+        def parse_response(response_text_):
+            nonlocal translated_sentences_matrix
+            json_result_ = json.loads(response_text_)
+            translated_sentences_matrix.append(list(json_result_.values()))
 
         translated_sentences_matrix = []
         for prompt in sentences_matrix:
@@ -181,22 +199,12 @@ class GroqTranslate(BaseTranslator):
                         copy(original_response_text)
                     )
                     try:
-                        json_result = json.loads(response_text)
-                        translated_sentences_matrix.append(list(json_result.values()))
+                        parse_response(response_text)
                     except JSONDecodeError:
-                        with open("llm_invalid_answers.txt", "a") as error_file:
-                            error_file.write(original_response_text + "\n")
-                        try:
-                            # Try to parse again replacing \" for ", that's a common llm error
-                            response_text = response_text.replace('\\"', '"')
-                            json_result = json.loads(response_text)
-                            translated_sentences_matrix.append(
-                                list(json_result.values())
-                            )
-                        except JSONDecodeError:
-                            with open("llm_invalid_answers.txt", "a") as error_file:
-                                error_file.write(original_response_text + "\n")
-                            raise
+                        self.write_wrong_answer_to_disk(original_response_text)
+                        # Try to parse again replacing \" for ", that's a common llm error
+                        response_text = response_text.replace('\\"', '"')
+                        parse_response(response_text)
 
                     self.requests_made += 1
                     self.tokens_used += reponse.usage.total_tokens
