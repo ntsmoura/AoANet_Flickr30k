@@ -7,3 +7,5 @@ libretranslate
 httpx
 tqdm
 google-cloud-translate
+dynaconf
+groq
