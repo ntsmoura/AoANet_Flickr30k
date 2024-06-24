@@ -29,6 +29,13 @@ class InvalidSentencesQuantity(Exception):
         super().__init__(msg)
 
 
+class InvalidAnswer(Exception):
+    def __init__(self, msg=None):
+        if not msg:
+            msg = "Invalid Answer..."
+        super().__init__(msg)
+
+
 class GroqTranslate(BaseTranslator):
     def __init__(
         self,
@@ -156,7 +163,7 @@ class GroqTranslate(BaseTranslator):
             found_error = True
 
         if len(answer) < 100:
-            raise ValueError("Invalid answer")
+            raise InvalidAnswer()
 
         answer = answer.strip()
         answer = answer.replace("\n", "")
@@ -219,7 +226,7 @@ class GroqTranslate(BaseTranslator):
                         response_text = response_text.replace('\\"', '"')
                         parse_response(response_text)
                     break
-                except (JSONDecodeError, InvalidSentencesQuantity):
+                except (JSONDecodeError, InvalidSentencesQuantity, InvalidAnswer):
                     continue
 
         return translated_sentences_matrix
