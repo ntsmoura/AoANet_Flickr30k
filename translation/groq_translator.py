@@ -22,6 +22,13 @@ from tqdm import tqdm
 from translation.config import settings
 
 
+class InvalidSentencesQuantity(Exception):
+    def __init__(self, msg=None):
+        if not msg:
+            msg = "Quantity of sentences is different from expected..."
+        super().__init__(msg)
+
+
 class GroqTranslate(BaseTranslator):
     def __init__(
         self,
@@ -63,7 +70,6 @@ class GroqTranslate(BaseTranslator):
         self.max_sentence_batches = 30
         self.groq_client = Groq(api_key=settings.api_keys.GROQ_API_KEY)
         self.requests_made = 0
-        self.tokens_used = 0
         # llama3-8b-8192 was chosen because the balance beetween tokens per minute/answer quality
         self.base_llm_model = "llama3-8b-8192"
 
@@ -76,7 +82,7 @@ class GroqTranslate(BaseTranslator):
         for image in tqdm(images):
             if self.requests_made >= 14390:
                 # Groq (llama3-8b-8192) has a limit of 14400 requests per day
-                raise Exception("Limite de requests diários estourado...")
+                raise Exception("Requests per day limit reached...")
 
             image_id = image["imgid"]
             infos_dict[image_id] = image
@@ -137,7 +143,7 @@ class GroqTranslate(BaseTranslator):
             else:
                 char_position = answer.find("}")
                 if char_position != -1:
-                    answer = answer[:char_position+1]
+                    answer = answer[: char_position + 1]
             found_error = True
 
         if answer[0] != "{":
@@ -177,12 +183,14 @@ class GroqTranslate(BaseTranslator):
         def parse_response(response_text_):
             nonlocal translated_sentences_matrix
             json_result_ = json.loads(response_text_)
+            if len(json_result_.keys()) != 5:
+                raise InvalidSentencesQuantity()
             translated_sentences_matrix.append(list(json_result_.values()))
 
         translated_sentences_matrix = []
         for prompt in sentences_matrix:
-            attempts = 0
-            while attempts < 5:
+            while True:
+                # Tries until get a valid json or another error occurs
                 try:
                     reponse = self.groq_client.chat.completions.create(
                         messages=[
@@ -193,6 +201,11 @@ class GroqTranslate(BaseTranslator):
                         ],
                         model=self.base_llm_model,
                     )
+
+                    self.requests_made += 1
+
+                    if self.requests_made >= 14400:
+                        raise Exception("Requests per day limit reached...")
 
                     original_response_text = reponse.choices[0].message.content
                     response_text = self.assert_valid_answer(
@@ -205,15 +218,9 @@ class GroqTranslate(BaseTranslator):
                         # Try to parse again replacing \" for ", that's a common llm error
                         response_text = response_text.replace('\\"', '"')
                         parse_response(response_text)
-
-                    self.requests_made += 1
-                    self.tokens_used += reponse.usage.total_tokens
                     break
-                except Exception:
-                    if attempts < 5:
-                        continue
-                    else:
-                        raise
+                except (JSONDecodeError, InvalidSentencesQuantity):
+                    continue
 
         return translated_sentences_matrix
 
