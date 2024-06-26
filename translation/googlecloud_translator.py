@@ -106,8 +106,8 @@ class GoogleCloudTranslate(BaseTranslator):
                     "parent": parent,
                     "contents": sentence_list,
                     "mime_type": "text/plain",  # mime types: text/plain, text/html
-                    "source_language_code": "en-US",
-                    "target_language_code": "pt-BR",
+                    "source_language_code": self.source_language,
+                    "target_language_code": self.dest_language,
                 }
             )
 
