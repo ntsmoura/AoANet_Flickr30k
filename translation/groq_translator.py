@@ -29,6 +29,13 @@ class InvalidSentencesQuantity(Exception):
         super().__init__(msg)
 
 
+class InvalidSentenceSize(Exception):
+    def __init__(self, msg=None):
+        if not msg:
+            msg = "Size of any sentence is invalid..."
+        super().__init__(msg)
+
+
 class InvalidAnswer(Exception):
     def __init__(self, msg=None):
         if not msg:
@@ -193,6 +200,9 @@ class GroqTranslate(BaseTranslator):
             json_result_ = json.loads(response_text_)
             if len(json_result_.keys()) != 5:
                 raise InvalidSentencesQuantity()
+            sentences_ = list(json_result_.values())
+            if any(len(sentence_) <= 10 for sentence_ in sentences_):
+                raise InvalidSentenceSize()
             translated_sentences_matrix.append(list(json_result_.values()))
 
         translated_sentences_matrix = []
@@ -227,7 +237,12 @@ class GroqTranslate(BaseTranslator):
                         response_text = response_text.replace('\\"', '"')
                         parse_response(response_text)
                     break
-                except (JSONDecodeError, InvalidSentencesQuantity, InvalidAnswer):
+                except (
+                    JSONDecodeError,
+                    InvalidSentencesQuantity,
+                    InvalidAnswer,
+                    InvalidSentenceSize,
+                ):
                     continue
 
         return translated_sentences_matrix

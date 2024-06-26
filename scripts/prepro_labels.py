@@ -27,6 +27,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import logging
 import os
 import json
 import argparse
@@ -131,6 +132,10 @@ def encode_captions(imgs, params, wtoi):
             label_length[caption_counter] = min(
                 max_length, len(s)
             )  # record the length of this sequence
+            try:
+                assert label_length[caption_counter] > 0
+            except AssertionError:
+                logging.warning(f"Image of id: {i} has one caption without words.")
             caption_counter += 1
             for k, w in enumerate(s):
                 if k < max_length:
