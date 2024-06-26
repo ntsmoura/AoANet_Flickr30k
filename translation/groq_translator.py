@@ -144,7 +144,7 @@ class GroqTranslate(BaseTranslator):
 
     @staticmethod
     def write_wrong_answer_to_disk(llm_original_anwser):
-        with open("llm_invalid_answers.txt", "a") as error_file:
+        with open("translation_data/llm_invalid_answers.txt", "a") as error_file:
             error_file.write(llm_original_anwser + "\n")
 
     def assert_valid_answer(self, answer):
