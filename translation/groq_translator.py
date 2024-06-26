@@ -66,7 +66,8 @@ class GroqTranslate(BaseTranslator):
         )
 
         self.base_prompt = (
-            "TRANSLATE THE FOLLOWING SENTENCES FROM EN-US TO PT-BR:\n\nREPLACE_THIS_WITH_SENTENCES"
+            f"TRANSLATE THE FOLLOWING SENTENCES FROM {self.source_language.upper()} TO {self.dest_language.upper()}:"
+            f"\n\nREPLACE_THIS_WITH_SENTENCES"
             "\n\nAND RETURN THEM INTO THE SAME JSON STRUCTURE REPLACING THE ORIGINAL SENTENCE FOR "
             "THE TRANSLATED ONE.\nSTRICT RULES:\n"
             "DO NOT ANSWER ANYTHING BESIDES THE JSON\nRETURN A VALID JSON THAT CAN BE"
