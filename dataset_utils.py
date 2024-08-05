@@ -1,5 +1,6 @@
 import argparse
 import json
+import random
 
 parser = argparse.ArgumentParser()
 
@@ -16,6 +17,8 @@ parser.add_argument(
     default="0",
     help="Return information about the dataset image id",
 )
+
+parser.add_argument("--function", type=str, default="find_image", help="The function you wanna use...")
 
 args = parser.parse_args()
 
@@ -39,4 +42,26 @@ def get_image_info(input_json, image_id):
         print("Image not found")
 
 
-get_image_info(args.input_json, args.image_id)
+def select_random_test_split(input_json):
+    with open(input_json, "rb") as file:
+        json_file = json.load(file)
+
+    test_images = []
+    images = json_file["images"]
+    for image in images:
+        if image["split"] == "test":
+            test_images.append(image)
+
+    selected_images = random.sample(test_images, 30)
+    for image in selected_images:
+        print(f"Id:{image['imgid']}; Filename:{image['filename']};", end="\n")
+
+
+function = args.function
+match function:
+    case "find_image":
+        get_image_info(args.input_json, args.image_id)
+    case "select_random_test":
+        select_random_test_split(args.input_json)
+    case _:
+        raise NotImplementedError
